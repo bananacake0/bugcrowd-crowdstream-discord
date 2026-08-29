@@ -2,7 +2,7 @@ name: CrowdStream to Discord
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "12 * * * *"
   workflow_dispatch:
 
 permissions:
