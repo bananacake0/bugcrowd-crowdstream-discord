@@ -797,7 +797,6 @@ def build_program_change_embed(
     name = program["name"]
     metadata = metadata or {}
     fields = [
-        {"name": "Slug", "value": f"`{slug}`", "inline": False},
         {
             "name": "CrowdStream",
             "value": (

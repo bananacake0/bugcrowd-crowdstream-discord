@@ -568,6 +568,7 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         )
 
         fields = {field["name"]: field["value"] for field in embed["fields"]}
+        self.assertNotIn("Slug", fields)
         self.assertEqual(fields["Industry"], "Finance")
         self.assertEqual(fields["Reward model"], "Pay For Success")
         self.assertEqual(fields["In-scope targets"], "2")
