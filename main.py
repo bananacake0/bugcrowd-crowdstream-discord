@@ -991,9 +991,10 @@ async def fetch_new_items(
     *,
     full_scan: bool = True,
 ) -> list[dict[str, Any]]:
-    # Sequential on purpose. Bugcrowd rate-limits per minute, so fetching programs
-    # concurrently only spends that quota faster: a run at four at a time drew 18
-    # rate limits in clusters of four and took 3m41s, against 15s one at a time.
+    # Sequential on purpose. Bugcrowd's per-minute quota, not request latency, sets how
+    # long a scan takes: back-to-back CI runs took 3m41s at four programs at a time and
+    # 3m50s one at a time, but the concurrent run drew 18 rate limits against 6. Fetching
+    # concurrently spends the same quota in tighter bursts; it does not raise it.
     ordered_results: list[Any] = []
     for program in programs:
         program_results = await fetch_program_crowdstream(
