@@ -186,6 +186,26 @@ class DateAndEmbedTests(unittest.TestCase):
         )
 
 
+class ScanStateTests(unittest.TestCase):
+    def test_missing_scan_state_requires_full_scan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state_file = Path(directory) / "scan_state.json"
+            self.assertEqual(
+                main.load_scan_state(state_file), {"full_scan_complete": False}
+            )
+
+    def test_scan_state_round_trips_atomically(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state_file = Path(directory) / "scan_state.json"
+            state = {
+                "full_scan_complete": True,
+                "completed_at": "2026-08-30T12:00:00+00:00",
+            }
+            main.save_scan_state(state, state_file)
+            self.assertEqual(main.load_scan_state(state_file), state)
+            self.assertEqual(list(Path(directory).glob("*.tmp")), [])
+
+
 class HistoryTests(unittest.TestCase):
     def test_missing_history_is_empty_and_save_is_sorted(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -426,6 +446,29 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
                 "atlassian-new",
                 "rapyd-newest",
             ],
+        )
+
+    @patch("main.fetch_crowdstream_page", new_callable=AsyncMock)
+    async def test_incremental_scan_fetches_page_one_only(self, fetch_page):
+        fetch_page.return_value = {
+            "results": [{"id": "latest", "accepted_at": "30 Aug 2026"}],
+        }
+        programs = [
+            {
+                "slug": "atlassian",
+                "name": "Atlassian",
+                "crowdstream_enabled": False,
+            }
+        ]
+        session = object()
+
+        new_items = await main.fetch_new_items(
+            session, set(), programs, full_scan=False
+        )
+
+        self.assertEqual([item["id"] for item in new_items], ["latest"])
+        fetch_page.assert_awaited_once_with(
+            session, "atlassian", page=1, allow_not_found=True
         )
 
     @patch("main.asyncio.sleep", new_callable=AsyncMock)
@@ -750,6 +793,7 @@ class MainConfigurationTests(unittest.IsolatedAsyncioTestCase):
             "DISCORD_PROGRAMS_WEBHOOK_URL": "https://discord.com/program-webhook",
             "CROWDSTREAM_HISTORY_FILE": "/var/lib/crowdstream/processed_ids.json",
             "CROWDSTREAM_PROGRAMS_FILE": "/var/lib/crowdstream/programs.json",
+            "CROWDSTREAM_SCAN_STATE_FILE": "/var/lib/crowdstream/scan_state.json",
         }
 
         with patch.dict(main.os.environ, environment, clear=True):
@@ -762,6 +806,7 @@ class MainConfigurationTests(unittest.IsolatedAsyncioTestCase):
             history_file=Path(environment["CROWDSTREAM_HISTORY_FILE"]),
             programs_file=Path(environment["CROWDSTREAM_PROGRAMS_FILE"]),
             programs_webhook_url=environment["DISCORD_PROGRAMS_WEBHOOK_URL"],
+            scan_state_file=Path(environment["CROWDSTREAM_SCAN_STATE_FILE"]),
         )
 
 
