@@ -34,6 +34,8 @@ Discord messages contain at most ten embeds and respect the 6,000-character embe
 
 When `DISCORD_PROGRAMS_WEBHOOK_URL` is configured, programs entering or leaving the paid catalog are posted to a separate Discord channel.
 
+New-program alerts also include metadata from the program's latest public changelog: industry, status, participation, reward model, publish date, in-scope target count, logo, and a short tagline.
+
 ## State files
 
 The repository intentionally starts with two valid empty JSON arrays:
