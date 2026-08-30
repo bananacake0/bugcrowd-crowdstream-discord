@@ -73,11 +73,7 @@ class DateAndEmbedTests(unittest.TestCase):
         )
         self.assertEqual(
             embed["fields"][-1],
-            {
-                "name": "\u200b",
-                "value": "Disclosed on 27 Aug 2026",
-                "inline": False,
-            },
+            {"name": "Disclosed on", "value": "27 Aug 2026", "inline": False},
         )
         self.assertNotIn("Researcher", {field["name"] for field in embed["fields"]})
 
@@ -85,38 +81,15 @@ class DateAndEmbedTests(unittest.TestCase):
         embed = main.build_discord_embed(
             {
                 "engagement_name": "Example",
-                "engagement_path": "/engagements/example",
-                "submission_state_text": "Submission accepted on target: example.com",
                 "accepted_at": "28 Aug 2026",
                 "submission_state_date_text": "Accepted on 28 Aug 2026",
                 "created_at": "2026-08-20T12:00:00Z",
-                "amount": "$500",
-                "priority": 3,
-                "researcher_username": "researcher",
-                "researcher_profile_path": "/researchers/researcher",
-                "crowdstream_name_visible": True,
-                "logo_url": "https://example.com/program-logo.png",
             }
         )
 
-        self.assertEqual(embed["title"], "Submission accepted on target: example.com")
-        self.assertEqual(embed["footer"]["text"], "Submitted on 20 Aug 2026")
-        self.assertEqual(
-            embed["thumbnail"], {"url": "https://example.com/program-logo.png"}
-        )
-        self.assertEqual(
-            [field["name"] for field in embed["fields"]],
-            ["Researcher", "Engagement", "Reward", "Priority", "\u200b"],
-        )
-        self.assertEqual(embed["fields"][2]["value"], "$500")
-        self.assertEqual(embed["fields"][3]["value"], "`P3`")
         self.assertEqual(
             embed["fields"][-1],
-            {
-                "name": "\u200b",
-                "value": "Accepted on 28 Aug 2026",
-                "inline": False,
-            },
+            {"name": "Accepted on", "value": "28 Aug 2026", "inline": False},
         )
 
     def test_each_priority_has_readable_text_badge_and_sidebar_color(self):
@@ -127,22 +100,9 @@ class DateAndEmbedTests(unittest.TestCase):
                     field for field in embed["fields"] if field["name"] == "Priority"
                 )
 
-                self.assertEqual(priority_field["value"], f"`P{priority}`")
+                self.assertEqual(priority_field["value"], f"**P{priority}**")
                 self.assertEqual(embed["color"], main.COLOR_BY_PRIORITY[priority])
                 self.assertNotIn("thumbnail", embed)
-
-    def test_program_logo_remains_thumbnail_for_high_priority(self):
-        embed = main.build_discord_embed(
-            {
-                "priority": 1,
-                "logo_url": "https://example.com/program-logo.png",
-            }
-        )
-
-        self.assertEqual(
-            embed["thumbnail"], {"url": "https://example.com/program-logo.png"}
-        )
-        self.assertNotIn("Reward", {field["name"] for field in embed["fields"]})
 
     def test_external_bugcrowd_path_is_rejected(self):
         self.assertEqual(
@@ -166,24 +126,7 @@ class DateAndEmbedTests(unittest.TestCase):
 
         self.assertEqual(embed["title"], "Disclosed: Report")
         self.assertEqual(embed["footer"]["text"], "Submitted on Unknown")
-        self.assertEqual(embed["fields"][-1]["value"], "Disclosed on Recently")
-
-    def test_crowdstream_sort_key_uses_event_date(self):
-        reports = [
-            {"id": "newest", "accepted_at": "30 Aug 2026"},
-            {
-                "id": "middle",
-                "disclosed": True,
-                "disclosed_at": "20 Aug 2026",
-            },
-            {"id": "oldest", "accepted_at": "5 Aug 2026"},
-        ]
-
-        reports.sort(key=main.crowdstream_sort_key)
-
-        self.assertEqual(
-            [report["id"] for report in reports], ["oldest", "middle", "newest"]
-        )
+        self.assertEqual(embed["fields"][-1]["value"], "Recently")
 
 
 class HistoryTests(unittest.TestCase):
@@ -214,110 +157,13 @@ class HistoryTests(unittest.TestCase):
             with self.assertRaises(main.HistoryError):
                 main.load_processed_ids(history_file)
 
-
-class ProgramsTests(unittest.TestCase):
-    def test_empty_program_list_is_a_valid_bootstrap_state(self):
+    def test_backfill_completion_marker_is_created(self):
         with tempfile.TemporaryDirectory() as directory:
-            programs_file = Path(directory) / "programs.json"
-            programs_file.write_text("[]\n", encoding="utf-8")
+            marker_file = Path(directory) / ".backfill_complete"
 
-            self.assertEqual(main.load_programs(programs_file), [])
+            main.mark_backfill_complete(marker_file)
 
-    def test_loads_valid_programs(self):
-        with tempfile.TemporaryDirectory() as directory:
-            programs_file = Path(directory) / "programs.json"
-            programs_file.write_text(
-                json.dumps(
-                    [
-                        {
-                            "slug": "atlassian",
-                            "name": "Atlassian",
-                            "crowdstream_enabled": True,
-                        },
-                        {
-                            "slug": "launchdarkly-mbb-og",
-                            "name": "LaunchDarkly",
-                            "crowdstream_enabled": False,
-                        },
-                    ]
-                ),
-                encoding="utf-8",
-            )
-
-            self.assertEqual(
-                main.load_programs(programs_file),
-                [
-                    {
-                        "slug": "atlassian",
-                        "name": "Atlassian",
-                        "crowdstream_enabled": True,
-                    },
-                    {
-                        "slug": "launchdarkly-mbb-og",
-                        "name": "LaunchDarkly",
-                        "crowdstream_enabled": False,
-                    },
-                ],
-            )
-
-    def test_rejects_duplicate_or_unsafe_program_slugs(self):
-        invalid_program_lists = [
-            [
-                {
-                    "slug": "duplicate",
-                    "name": "First",
-                    "crowdstream_enabled": True,
-                },
-                {
-                    "slug": "duplicate",
-                    "name": "Second",
-                    "crowdstream_enabled": True,
-                },
-            ],
-            [
-                {
-                    "slug": "../unsafe",
-                    "name": "Unsafe",
-                    "crowdstream_enabled": True,
-                }
-            ],
-        ]
-
-        for programs in invalid_program_lists:
-            with self.subTest(programs=programs):
-                with tempfile.TemporaryDirectory() as directory:
-                    programs_file = Path(directory) / "programs.json"
-                    programs_file.write_text(json.dumps(programs), encoding="utf-8")
-
-                    with self.assertRaises(main.ProgramsError):
-                        main.load_programs(programs_file)
-
-    def test_save_programs_is_sorted_and_atomic(self):
-        programs = [
-            {"slug": "zebra", "name": "Zebra", "crowdstream_enabled": False},
-            {"slug": "alpha", "name": "Alpha", "crowdstream_enabled": True},
-        ]
-        with tempfile.TemporaryDirectory() as directory:
-            programs_file = Path(directory) / "programs.json"
-
-            main.save_programs(programs, programs_file)
-
-            self.assertEqual(
-                [program["slug"] for program in main.load_programs(programs_file)],
-                ["alpha", "zebra"],
-            )
-            self.assertEqual(list(programs_file.parent.glob("*.tmp")), [])
-
-    def test_catalog_slug_preserves_case_required_by_bugcrowd(self):
-        self.assertEqual(
-            main.paid_program_from_catalog(
-                {
-                    "name": "CoinDesk Data",
-                    "briefUrl": "/engagements/CCData-mbb-og",
-                }
-            ),
-            {"slug": "CCData-mbb-og", "name": "CoinDesk Data"},
-        )
+            self.assertTrue(marker_file.is_file())
 
 
 class SelectionTests(unittest.TestCase):
@@ -334,180 +180,85 @@ class SelectionTests(unittest.TestCase):
 
 
 class NetworkTests(unittest.IsolatedAsyncioTestCase):
-    @patch("main.asyncio.sleep", new_callable=AsyncMock)
-    async def test_fetch_validates_http_status(self, sleep):
-        session = FakeSession([FakeResponse(503) for _ in range(5)])
+    async def test_fetch_validates_http_status(self):
+        session = FakeSession([FakeResponse(503)])
 
         with self.assertRaises(main.CrowdstreamError):
-            await main.fetch_crowdstream_page(session, "atlassian", page=1)
-        self.assertEqual(sleep.await_count, 4)
+            await main.fetch_crowdstream_page(session, page=1)
 
     async def test_fetch_accepts_expected_response(self):
         payload = {"results": [{"id": "one"}]}
         session = FakeSession([FakeResponse(200, payload=payload)])
 
+        self.assertEqual(await main.fetch_crowdstream_page(session, page=1), payload)
+
+    @patch("main.fetch_crowdstream_page", new_callable=AsyncMock)
+    async def test_fetches_recent_pages_descending_and_orders_each_oldest_first(
+        self, fetch_page
+    ):
+        fetch_page.side_effect = [
+            {"results": [{"id": f"page-{page}-new"}, {"id": f"page-{page}-old"}]}
+            for page in range(5, 0, -1)
+        ]
+        session = object()
+
+        new_items = await main.fetch_new_items(session, set())
+
         self.assertEqual(
-            await main.fetch_crowdstream_page(session, "atlassian", page=1),
-            payload,
+            [call.kwargs["page"] for call in fetch_page.await_args_list],
+            [5, 4, 3, 2, 1],
         )
         self.assertEqual(
-            session.calls,
+            [item["id"] for item in new_items],
             [
-                (
-                    "GET",
-                    "https://bugcrowd.com/engagements/atlassian/crowdstream.json",
-                    {"headers": {"User-Agent": main.USER_AGENT}, "params": {"page": 1}},
-                )
+                item_id
+                for page in range(5, 0, -1)
+                for item_id in (f"page-{page}-old", f"page-{page}-new")
             ],
         )
 
     @patch("main.fetch_crowdstream_page", new_callable=AsyncMock)
-    async def test_fetches_all_program_pages_then_globally_sorts_oldest_first(
+    async def test_full_backfill_discovers_last_page_and_orders_it_first(
         self, fetch_page
     ):
         fetch_page.side_effect = [
             {
-                "results": [{"id": "atlassian-new", "accepted_at": "30 Aug 2026"}],
-                "pagination_meta": {"total_pages": 2},
-            },
-            {"results": [{"id": "atlassian-older", "accepted_at": "10 Aug 2026"}]},
-            None,
-            {
-                "results": [{"id": "rapyd-newest", "accepted_at": "31 Aug 2026"}],
                 "pagination_meta": {"total_pages": 3},
+                "results": [{"id": "page-1-new"}, {"id": "page-1-old"}],
             },
-            {"results": [{"id": "rapyd-oldest", "accepted_at": "5 Aug 2026"}]},
-            {"results": [{"id": "rapyd-middle", "accepted_at": "20 Aug 2026"}]},
+            {"results": [{"id": "page-3-new"}, {"id": "page-3-old"}]},
+            {"results": [{"id": "page-2-new"}, {"id": "page-2-old"}]},
         ]
         session = object()
-        programs = [
-            {
-                "slug": "atlassian",
-                "name": "Atlassian",
-                "crowdstream_enabled": True,
-            },
-            {
-                "slug": "launchdarkly",
-                "name": "LaunchDarkly",
-                "crowdstream_enabled": False,
-            },
-            {"slug": "rapyd", "name": "Rapyd", "crowdstream_enabled": True},
-        ]
 
-        new_items = await main.fetch_new_items(session, set(), programs)
-
-        self.assertEqual(
-            [call.args[1] for call in fetch_page.await_args_list],
-            [
-                "atlassian",
-                "atlassian",
-                "launchdarkly",
-                "rapyd",
-                "rapyd",
-                "rapyd",
-            ],
+        new_items = await main.fetch_new_items(
+            session,
+            set(),
+            full_backfill=True,
         )
+
         self.assertEqual(
             [call.kwargs["page"] for call in fetch_page.await_args_list],
-            [1, 2, 1, 1, 3, 2],
+            [1, 3, 2],
         )
-        self.assertTrue(fetch_page.await_args_list[0].kwargs["allow_not_found"])
-        self.assertTrue(fetch_page.await_args_list[2].kwargs["allow_not_found"])
-        self.assertTrue(fetch_page.await_args_list[3].kwargs["allow_not_found"])
-        self.assertTrue(programs[0]["crowdstream_enabled"])
-        self.assertFalse(programs[1]["crowdstream_enabled"])
-        self.assertTrue(programs[2]["crowdstream_enabled"])
         self.assertEqual(
             [item["id"] for item in new_items],
             [
-                "rapyd-oldest",
-                "atlassian-older",
-                "rapyd-middle",
-                "atlassian-new",
-                "rapyd-newest",
+                "page-3-old",
+                "page-3-new",
+                "page-2-old",
+                "page-2-new",
+                "page-1-old",
+                "page-1-new",
             ],
         )
 
-    @patch("main.asyncio.sleep", new_callable=AsyncMock)
-    async def test_bugcrowd_retries_rate_limit_then_succeeds(self, sleep):
-        payload = {"results": [], "pagination_meta": {"total_pages": 0}}
-        session = FakeSession(
-            [
-                FakeResponse(429, headers={"Retry-After": "0.25"}),
-                FakeResponse(200, payload=payload),
-            ]
-        )
+    @patch("main.fetch_crowdstream_page", new_callable=AsyncMock)
+    async def test_full_backfill_requires_valid_pagination_metadata(self, fetch_page):
+        fetch_page.return_value = {"results": []}
 
-        result = await main.fetch_crowdstream_page(session, "atlassian")
-
-        self.assertEqual(result, payload)
-        sleep.assert_awaited_once_with(0.25)
-
-    async def test_fetches_every_paid_catalog_page_and_deduplicates_slug(self):
-        session = FakeSession(
-            [
-                FakeResponse(
-                    200,
-                    payload={
-                        "engagements": [
-                            {"name": "Alpha", "briefUrl": "/engagements/alpha"},
-                            {"name": "Beta", "briefUrl": "/engagements/beta"},
-                        ],
-                        "paginationMeta": {"limit": 2, "totalCount": 4},
-                    },
-                ),
-                FakeResponse(
-                    200,
-                    payload={
-                        "engagements": [
-                            {"name": "Gamma", "briefUrl": "/engagements/gamma"},
-                            {"name": "Beta", "briefUrl": "/engagements/beta"},
-                        ]
-                    },
-                ),
-            ]
-        )
-
-        programs = await main.fetch_paid_programs(session)
-
-        self.assertEqual(
-            programs,
-            [
-                {"slug": "alpha", "name": "Alpha"},
-                {"slug": "beta", "name": "Beta"},
-                {"slug": "gamma", "name": "Gamma"},
-            ],
-        )
-        self.assertEqual([call[2]["params"]["page"] for call in session.calls], [1, 2])
-
-    @patch("main.fetch_paid_programs", new_callable=AsyncMock)
-    async def test_refresh_programs_preserves_known_state_and_marks_new_unknown(
-        self, fetch_paid_programs
-    ):
-        fetch_paid_programs.return_value = [
-            {"slug": "existing", "name": "Renamed Existing"},
-            {"slug": "new", "name": "New"},
-        ]
-        previous = [
-            {"slug": "existing", "name": "Existing", "crowdstream_enabled": True},
-            {"slug": "removed", "name": "Removed", "crowdstream_enabled": False},
-        ]
-
-        refreshed, added, removed = await main.refresh_programs(object(), previous)
-
-        self.assertEqual(
-            refreshed,
-            [
-                {
-                    "slug": "existing",
-                    "name": "Renamed Existing",
-                    "crowdstream_enabled": True,
-                },
-                {"slug": "new", "name": "New", "crowdstream_enabled": False},
-            ],
-        )
-        self.assertEqual(added, [refreshed[1]])
-        self.assertEqual(removed, [previous[1]])
+        with self.assertRaises(main.CrowdstreamError):
+            await main.fetch_new_items(object(), set(), full_backfill=True)
 
     @patch("main.asyncio.sleep", new_callable=AsyncMock)
     async def test_discord_prefers_json_retry_after_then_succeeds(self, sleep):
@@ -563,39 +314,6 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
             )
         self.assertEqual(len(session.calls), 1)
 
-    @patch("main.asyncio.sleep", new_callable=AsyncMock)
-    @patch("main.send_discord_payload", new_callable=AsyncMock)
-    async def test_program_changes_are_batched_for_their_webhook(self, send, sleep):
-        send.return_value = 0.0
-        added = [
-            {
-                "slug": f"added-{index}",
-                "name": f"Added {index}",
-                "crowdstream_enabled": True,
-            }
-            for index in range(11)
-        ]
-        removed = [
-            {
-                "slug": "removed",
-                "name": "Removed",
-                "crowdstream_enabled": False,
-            }
-        ]
-
-        await main.deliver_program_changes(
-            object(), "https://discord.com/program-webhook", added, removed
-        )
-
-        self.assertEqual(
-            [len(call.args[2]["embeds"]) for call in send.await_args_list], [10, 2]
-        )
-        self.assertEqual(
-            send.await_args_list[-1].args[2]["embeds"][-1]["title"],
-            "Paid program removed",
-        )
-        sleep.assert_awaited_once_with(3.0)
-
     def test_delivery_batches_use_at_most_ten_embeds(self):
         items = [{"id": str(index)} for index in range(23)]
 
@@ -640,33 +358,6 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
                 ],
             )
             sleep.assert_awaited_once_with(3.0)
-
-
-class MainConfigurationTests(unittest.IsolatedAsyncioTestCase):
-    @patch("main.run_bot", new_callable=AsyncMock)
-    @patch("main.load_dotenv")
-    async def test_main_passes_vps_state_paths_from_environment(
-        self, load_dotenv, run_bot
-    ):
-        run_bot.return_value = 0
-        environment = {
-            "DISCORD_WEBHOOK_URL": "https://discord.com/report-webhook",
-            "DISCORD_PROGRAMS_WEBHOOK_URL": "https://discord.com/program-webhook",
-            "CROWDSTREAM_HISTORY_FILE": "/var/lib/crowdstream/processed_ids.json",
-            "CROWDSTREAM_PROGRAMS_FILE": "/var/lib/crowdstream/programs.json",
-        }
-
-        with patch.dict(main.os.environ, environment, clear=True):
-            result = await main.main()
-
-        self.assertEqual(result, 0)
-        load_dotenv.assert_called_once_with()
-        run_bot.assert_awaited_once_with(
-            environment["DISCORD_WEBHOOK_URL"],
-            history_file=Path(environment["CROWDSTREAM_HISTORY_FILE"]),
-            programs_file=Path(environment["CROWDSTREAM_PROGRAMS_FILE"]),
-            programs_webhook_url=environment["DISCORD_PROGRAMS_WEBHOOK_URL"],
-        )
 
 
 if __name__ == "__main__":

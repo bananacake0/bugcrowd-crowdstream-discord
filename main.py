@@ -1,11 +1,9 @@
 import asyncio
 import json
-import math
 import os
-import re
 import tempfile
 from collections.abc import Mapping, Sequence
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -14,13 +12,11 @@ import aiohttp
 from dotenv import load_dotenv
 
 BUGCROWD_ORIGIN = "https://bugcrowd.com"
-PAID_PROGRAMS_URL = f"{BUGCROWD_ORIGIN}/engagements-us.json"
+CROWDSTREAM_URL = f"{BUGCROWD_ORIGIN}/crowdstream.json"
 HISTORY_FILE = Path("processed_ids.json")
-PROGRAMS_FILE = Path("programs.json")
-PROGRAM_SLUG_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]*$")
-PROGRAM_PATH_PATTERN = re.compile(r"^/engagements/([A-Za-z0-9][A-Za-z0-9-]*)/?$")
+BACKFILL_COMPLETE_FILE = Path(".backfill_complete")
+PAGE_NUMBERS_DESCENDING = tuple(range(5, 0, -1))
 REQUEST_TIMEOUT_SECONDS = 30
-BUGCROWD_MAX_ATTEMPTS = 5
 DISCORD_MAX_ATTEMPTS = 3
 DISCORD_RETRY_BASE_SECONDS = 1.0
 DISCORD_MAX_EMBEDS_PER_MESSAGE = 10
@@ -44,14 +40,6 @@ class HistoryError(RuntimeError):
     """Raised when processed-ID state cannot be trusted or persisted."""
 
 
-class ProgramsError(RuntimeError):
-    """Raised when the monitored-program configuration cannot be trusted."""
-
-
-class BugcrowdRequestError(RuntimeError):
-    """Raised when Bugcrowd cannot return a usable response after retries."""
-
-
 class CrowdstreamError(RuntimeError):
     """Raised when Bugcrowd's CrowdStream response cannot be used."""
 
@@ -72,61 +60,8 @@ def format_iso_date(date_str: str | None) -> str:
     return parsed.strftime("%d %b %Y")
 
 
-def parse_crowdstream_date(date_str: str) -> date | None:
-    normalized = f"{date_str[:-1]}+00:00" if date_str.endswith("Z") else date_str
-    try:
-        return datetime.fromisoformat(normalized).date()
-    except ValueError:
-        pass
-
-    try:
-        return datetime.strptime(date_str, "%d %b %Y").date()
-    except ValueError:
-        return None
-
-
 def text_value(value: Any, default: str = "") -> str:
     return value if isinstance(value, str) and value else default
-
-
-def seconds_value(value: Any) -> float | None:
-    if isinstance(value, bool):
-        return None
-    try:
-        return max(0.0, float(value))
-    except (TypeError, ValueError):
-        return None
-
-
-def save_json_atomically(
-    data: Any,
-    output_file: Path,
-    error_type: type[RuntimeError],
-    description: str,
-) -> None:
-    temporary_path: Path | None = None
-    try:
-        output_file.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(
-            "w",
-            encoding="utf-8",
-            dir=output_file.parent,
-            prefix=f".{output_file.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as temporary_file:
-            temporary_path = Path(temporary_file.name)
-            json.dump(data, temporary_file, indent=2)
-            temporary_file.write("\n")
-            temporary_file.flush()
-            os.fsync(temporary_file.fileno())
-        os.replace(temporary_path, output_file)
-    except OSError as exc:
-        if temporary_path is not None:
-            temporary_path.unlink(missing_ok=True)
-        raise error_type(
-            f"Could not save {description} file {output_file}: {exc}"
-        ) from exc
 
 
 def load_processed_ids(history_file: Path = HISTORY_FILE) -> set[str]:
@@ -158,71 +93,39 @@ def load_processed_ids(history_file: Path = HISTORY_FILE) -> set[str]:
 def save_processed_ids(
     processed_ids: set[str], history_file: Path = HISTORY_FILE
 ) -> None:
-    save_json_atomically(sorted(processed_ids), history_file, HistoryError, "history")
-
-
-def load_programs(programs_file: Path = PROGRAMS_FILE) -> list[dict[str, Any]]:
+    temporary_path: Path | None = None
     try:
-        raw_data = programs_file.read_text(encoding="utf-8")
-    except FileNotFoundError as exc:
-        raise ProgramsError(f"Programs file {programs_file} does not exist") from exc
+        history_file.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=history_file.parent,
+            prefix=f".{history_file.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as temporary_file:
+            temporary_path = Path(temporary_file.name)
+            json.dump(sorted(processed_ids), temporary_file, indent=2)
+            temporary_file.write("\n")
+            temporary_file.flush()
+            os.fsync(temporary_file.fileno())
+        os.replace(temporary_path, history_file)
     except OSError as exc:
-        raise ProgramsError(
-            f"Could not read programs file {programs_file}: {exc}"
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+        raise HistoryError(
+            f"Could not save history file {history_file}: {exc}"
         ) from exc
 
+
+def mark_backfill_complete(marker_file: Path = BACKFILL_COMPLETE_FILE) -> None:
     try:
-        data = json.loads(raw_data)
-    except json.JSONDecodeError as exc:
-        raise ProgramsError(
-            f"Programs file {programs_file} contains invalid JSON"
+        marker_file.parent.mkdir(parents=True, exist_ok=True)
+        marker_file.touch(exist_ok=True)
+    except OSError as exc:
+        raise HistoryError(
+            f"Could not mark historical backfill complete at {marker_file}: {exc}"
         ) from exc
-
-    if not isinstance(data, list):
-        raise ProgramsError(f"Programs file {programs_file} must contain a list")
-
-    programs: list[dict[str, Any]] = []
-    seen_slugs: set[str] = set()
-    for item in data:
-        if not isinstance(item, Mapping):
-            raise ProgramsError(
-                f"Programs file {programs_file} contains an invalid entry"
-            )
-
-        slug = item.get("slug")
-        name = item.get("name")
-        crowdstream_enabled = item.get("crowdstream_enabled")
-        if (
-            not isinstance(slug, str)
-            or not PROGRAM_SLUG_PATTERN.fullmatch(slug)
-            or not isinstance(name, str)
-            or not name
-            or not isinstance(crowdstream_enabled, bool)
-        ):
-            raise ProgramsError(
-                f"Programs file {programs_file} entries require a valid slug, name, "
-                "and crowdstream_enabled flag"
-            )
-        if slug in seen_slugs:
-            raise ProgramsError(f"Programs file {programs_file} repeats slug {slug}")
-
-        seen_slugs.add(slug)
-        programs.append(
-            {
-                "slug": slug,
-                "name": name,
-                "crowdstream_enabled": crowdstream_enabled,
-            }
-        )
-
-    return programs
-
-
-def save_programs(
-    programs: Sequence[Mapping[str, Any]], programs_file: Path = PROGRAMS_FILE
-) -> None:
-    ordered_programs = sorted(programs, key=lambda program: program["slug"])
-    save_json_atomically(ordered_programs, programs_file, ProgramsError, "programs")
 
 
 def bugcrowd_url(path: str | None) -> str:
@@ -236,245 +139,33 @@ def bugcrowd_url(path: str | None) -> str:
     return BUGCROWD_ORIGIN
 
 
-def crowdstream_event(item: Mapping[str, Any]) -> tuple[str, str]:
-    raw_state_date_text = text_value(item.get("submission_state_date_text"), "Recently")
-    if item.get("disclosed") is True:
-        return (
-            "Disclosed on",
-            text_value(
-                item.get("disclosed_at"),
-                raw_state_date_text.removeprefix("Disclosed on "),
-            ),
-        )
-    return (
-        "Accepted on",
-        text_value(
-            item.get("accepted_at"),
-            raw_state_date_text.removeprefix("Accepted on "),
-        ),
-    )
-
-
-def crowdstream_sort_key(item: Mapping[str, Any]) -> int:
-    _, event_date = crowdstream_event(item)
-    parsed = parse_crowdstream_date(event_date)
-    return parsed.toordinal() if parsed is not None else date.max.toordinal()
-
-
-async def fetch_bugcrowd_json(
-    session: aiohttp.ClientSession,
-    url: str,
-    *,
-    params: Mapping[str, Any],
-    description: str,
-    allow_not_found: bool = False,
-) -> dict[str, Any] | None:
-    last_error = "unknown Bugcrowd response"
-    for attempt in range(1, BUGCROWD_MAX_ATTEMPTS + 1):
-        try:
-            async with session.get(
-                url,
-                headers={"User-Agent": USER_AGENT},
-                params=params,
-            ) as response:
-                if response.status == 404 and allow_not_found:
-                    return None
-                if response.status == 200:
-                    try:
-                        data = await response.json()
-                    except (aiohttp.ContentTypeError, json.JSONDecodeError) as exc:
-                        raise BugcrowdRequestError(
-                            f"{description} returned invalid JSON"
-                        ) from exc
-                    if not isinstance(data, dict):
-                        raise BugcrowdRequestError(
-                            f"{description} returned an unexpected response shape"
-                        )
-                    return data
-
-                last_error = f"{description} returned HTTP {response.status}"
-                if response.status != 429 and response.status < 500:
-                    raise BugcrowdRequestError(last_error)
-                delay = retry_delay_seconds(response.headers, attempt)
-        except (aiohttp.ClientError, TimeoutError) as exc:
-            last_error = f"Could not fetch {description}: {exc}"
-            delay = DISCORD_RETRY_BASE_SECONDS * (2 ** (attempt - 1))
-
-        if attempt < BUGCROWD_MAX_ATTEMPTS:
-            print(
-                f"[!] {last_error}; retrying in {delay:g}s "
-                f"({attempt}/{BUGCROWD_MAX_ATTEMPTS})"
-            )
-            await asyncio.sleep(delay)
-
-    raise BugcrowdRequestError(f"{last_error} after {BUGCROWD_MAX_ATTEMPTS} attempts")
-
-
 async def fetch_crowdstream_page(
-    session: aiohttp.ClientSession,
-    program_slug: str,
-    page: int = 1,
-    *,
-    allow_not_found: bool = False,
-) -> dict[str, Any] | None:
-    crowdstream_url = f"{BUGCROWD_ORIGIN}/engagements/{program_slug}/crowdstream.json"
-    print(f"[*] Fetching {program_slug} page {page}...")
+    session: aiohttp.ClientSession, page: int = 1
+) -> dict[str, Any]:
+    params = {"page": page, "filter_by": "accepted,disclosures"}
+    headers = {"User-Agent": USER_AGENT}
+    print(f"[*] Fetching page {page}...")
 
     try:
-        data = await fetch_bugcrowd_json(
-            session,
-            crowdstream_url,
-            params={"page": page},
-            description=f"Bugcrowd program {program_slug} page {page}",
-            allow_not_found=allow_not_found,
-        )
-    except BugcrowdRequestError as exc:
-        raise CrowdstreamError(str(exc)) from exc
+        async with session.get(
+            CROWDSTREAM_URL, headers=headers, params=params
+        ) as response:
+            if response.status != 200:
+                raise CrowdstreamError(
+                    f"Bugcrowd page {page} returned HTTP {response.status}"
+                )
+            try:
+                data = await response.json()
+            except (aiohttp.ContentTypeError, json.JSONDecodeError) as exc:
+                raise CrowdstreamError(
+                    f"Bugcrowd page {page} returned invalid JSON"
+                ) from exc
+    except (aiohttp.ClientError, TimeoutError) as exc:
+        raise CrowdstreamError(f"Could not fetch Bugcrowd page {page}: {exc}") from exc
 
-    if data is None:
-        return None
-
-    if not isinstance(data.get("results"), list):
-        raise CrowdstreamError(
-            f"Bugcrowd program {program_slug} page {page} has an unexpected "
-            "response shape"
-        )
+    if not isinstance(data, dict) or not isinstance(data.get("results"), list):
+        raise CrowdstreamError(f"Bugcrowd page {page} has an unexpected response shape")
     return data
-
-
-def paid_program_from_catalog(item: Any) -> dict[str, Any]:
-    if not isinstance(item, Mapping):
-        raise ProgramsError("Bugcrowd paid-program catalog contains an invalid entry")
-    name = item.get("name")
-    brief_url = item.get("briefUrl")
-    match = (
-        PROGRAM_PATH_PATTERN.fullmatch(brief_url)
-        if isinstance(brief_url, str)
-        else None
-    )
-    if not isinstance(name, str) or not name.strip() or match is None:
-        raise ProgramsError(
-            "Bugcrowd paid-program catalog entry is missing a valid name or slug"
-        )
-    return {"slug": match.group(1), "name": name.strip()}
-
-
-async def fetch_paid_programs(
-    session: aiohttp.ClientSession,
-) -> list[dict[str, Any]]:
-    params = {
-        "category": "bug_bounty",
-        "sort_by": "promoted",
-        "sort_direction": "desc",
-    }
-
-    async def fetch_page(page: int) -> dict[str, Any]:
-        try:
-            data = await fetch_bugcrowd_json(
-                session,
-                PAID_PROGRAMS_URL,
-                params={**params, "page": page},
-                description=f"Bugcrowd paid-program catalog page {page}",
-            )
-        except BugcrowdRequestError as exc:
-            raise ProgramsError(str(exc)) from exc
-        assert data is not None
-        if not isinstance(data.get("engagements"), list):
-            raise ProgramsError(
-                f"Bugcrowd paid-program catalog page {page} has an unexpected shape"
-            )
-        return data
-
-    first_page = await fetch_page(1)
-    pagination = first_page.get("paginationMeta")
-    if not isinstance(pagination, Mapping):
-        raise ProgramsError("Bugcrowd paid-program catalog has no pagination metadata")
-    limit = pagination.get("limit")
-    total_count = pagination.get("totalCount")
-    if (
-        not isinstance(limit, int)
-        or isinstance(limit, bool)
-        or limit < 1
-        or not isinstance(total_count, int)
-        or isinstance(total_count, bool)
-        or total_count < 1
-    ):
-        raise ProgramsError("Bugcrowd paid-program catalog pagination is invalid")
-
-    rows = list(first_page["engagements"])
-    total_pages = math.ceil(total_count / limit)
-    for page in range(2, total_pages + 1):
-        page_data = await fetch_page(page)
-        rows.extend(page_data["engagements"])
-    if len(rows) != total_count:
-        raise ProgramsError(
-            f"Bugcrowd paid-program catalog returned {len(rows)} of "
-            f"{total_count} expected rows"
-        )
-
-    programs_by_slug: dict[str, dict[str, Any]] = {}
-    for row in rows:
-        program = paid_program_from_catalog(row)
-        existing = programs_by_slug.get(program["slug"])
-        if existing is not None and existing["name"] != program["name"]:
-            raise ProgramsError(
-                f"Bugcrowd paid-program catalog repeats slug {program['slug']} "
-                "with conflicting names"
-            )
-        programs_by_slug[program["slug"]] = program
-    return sorted(programs_by_slug.values(), key=lambda program: program["slug"])
-
-
-async def refresh_programs(
-    session: aiohttp.ClientSession,
-    previous_programs: Sequence[Mapping[str, Any]],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
-    catalog_programs = await fetch_paid_programs(session)
-    previous_by_slug = {program["slug"]: program for program in previous_programs}
-    current_slugs = {program["slug"] for program in catalog_programs}
-    added: list[dict[str, Any]] = []
-    refreshed: list[dict[str, Any]] = []
-
-    for catalog_program in catalog_programs:
-        previous = previous_by_slug.get(catalog_program["slug"])
-        if previous is None:
-            program = {
-                **catalog_program,
-                "crowdstream_enabled": False,
-            }
-            added.append(program)
-        else:
-            program = {
-                **catalog_program,
-                "crowdstream_enabled": previous["crowdstream_enabled"],
-            }
-        refreshed.append(program)
-
-    removed = [
-        dict(program)
-        for program in previous_programs
-        if program["slug"] not in current_slugs
-    ]
-    return refreshed, added, removed
-
-
-def crowdstream_total_pages(data: Mapping[str, Any], program_slug: str) -> int:
-    pagination = data.get("pagination_meta")
-    if not isinstance(pagination, Mapping):
-        raise CrowdstreamError(
-            f"Bugcrowd program {program_slug} has no CrowdStream pagination metadata"
-        )
-
-    total_pages = pagination.get("total_pages")
-    if (
-        not isinstance(total_pages, int)
-        or isinstance(total_pages, bool)
-        or total_pages < 0
-    ):
-        raise CrowdstreamError(
-            f"Bugcrowd program {program_slug} has invalid CrowdStream pagination"
-        )
-    return total_pages
 
 
 def build_discord_embed(item: Mapping[str, Any]) -> dict[str, Any]:
@@ -482,7 +173,20 @@ def build_discord_embed(item: Mapping[str, Any]) -> dict[str, Any]:
     program_url = bugcrowd_url(text_value(item.get("engagement_path")))
     is_disclosed = item.get("disclosed") is True
     state_text = text_value(item.get("submission_state_text"), "Submission accepted")
-    event_date_label, event_date_value = crowdstream_event(item)
+
+    raw_state_date_text = text_value(item.get("submission_state_date_text"), "Recently")
+    if is_disclosed:
+        event_date_label = "Disclosed on"
+        event_date_value = text_value(
+            item.get("disclosed_at"),
+            raw_state_date_text.removeprefix("Disclosed on "),
+        )
+    else:
+        event_date_label = "Accepted on"
+        event_date_value = text_value(
+            item.get("accepted_at"),
+            raw_state_date_text.removeprefix("Accepted on "),
+        )
 
     priority = item.get("priority")
     priority_number = (
@@ -491,7 +195,7 @@ def build_discord_embed(item: Mapping[str, Any]) -> dict[str, Any]:
         else None
     )
     priority_value = (
-        f"`P{priority_number}`" if priority_number in COLOR_BY_PRIORITY else "N/A"
+        f"**P{priority_number}**" if priority_number in COLOR_BY_PRIORITY else "N/A"
     )
     embed: dict[str, Any] = {
         "color": COLOR_BY_PRIORITY.get(priority_number, DEFAULT_EMBED_COLOR),
@@ -522,28 +226,22 @@ def build_discord_embed(item: Mapping[str, Any]) -> dict[str, Any]:
             }
         )
 
-    fields.append(
-        {
-            "name": "Engagement",
-            "value": f"[{engagement_name}]({program_url})",
-            "inline": False,
-        }
-    )
-    amount = item.get("amount")
-    if amount is not None and str(amount):
-        fields.append(
-            {
-                "name": "Reward",
-                "value": str(amount),
-                "inline": False,
-            }
-        )
     fields.extend(
         [
+            {
+                "name": "Engagement",
+                "value": f"[{engagement_name}]({program_url})",
+                "inline": False,
+            },
+            {
+                "name": "Reward",
+                "value": str(item.get("amount") or "Unknown"),
+                "inline": False,
+            },
             {"name": "Priority", "value": priority_value, "inline": False},
             {
-                "name": "\u200b",
-                "value": f"{event_date_label} {event_date_value}",
+                "name": event_date_label,
+                "value": str(event_date_value),
                 "inline": False,
             },
         ]
@@ -607,6 +305,15 @@ def batch_items_for_discord(
     return batches
 
 
+def seconds_value(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        return max(0.0, float(value))
+    except (TypeError, ValueError):
+        return None
+
+
 def retry_delay_seconds(
     headers: Mapping[str, str], attempt: int, response_retry_after: Any = None
 ) -> float:
@@ -655,11 +362,12 @@ async def rate_limit_retry_delay(response: Any, attempt: int) -> float:
     return delay
 
 
-async def send_discord_payload(
+async def send_to_discord(
     session: aiohttp.ClientSession,
     webhook_url: str,
-    payload: Mapping[str, Any],
+    items: Sequence[Mapping[str, Any]],
 ) -> float:
+    payload = {"embeds": [build_discord_embed(item) for item in items]}
     last_error = "unknown delivery error"
 
     for attempt in range(1, DISCORD_MAX_ATTEMPTS + 1):
@@ -689,58 +397,6 @@ async def send_discord_payload(
     raise DiscordDeliveryError(f"{last_error} after {DISCORD_MAX_ATTEMPTS} attempts")
 
 
-async def send_to_discord(
-    session: aiohttp.ClientSession,
-    webhook_url: str,
-    items: Sequence[Mapping[str, Any]],
-) -> float:
-    payload = {"embeds": [build_discord_embed(item) for item in items]}
-    return await send_discord_payload(session, webhook_url, payload)
-
-
-def build_program_change_embed(
-    program: Mapping[str, Any], change: str
-) -> dict[str, Any]:
-    added = change == "added"
-    slug = program["slug"]
-    name = program["name"]
-    return {
-        "title": "New paid Bugcrowd program" if added else "Paid program removed",
-        "description": f"[{name}]({BUGCROWD_ORIGIN}/engagements/{slug})",
-        "color": 3066993 if added else 15158332,
-        "fields": [
-            {"name": "Slug", "value": f"`{slug}`", "inline": False},
-            {
-                "name": "CrowdStream",
-                "value": (
-                    "Enabled"
-                    if program.get("crowdstream_enabled") is True
-                    else "Not enabled"
-                ),
-                "inline": False,
-            },
-        ],
-    }
-
-
-async def deliver_program_changes(
-    session: aiohttp.ClientSession,
-    webhook_url: str,
-    added: Sequence[Mapping[str, Any]],
-    removed: Sequence[Mapping[str, Any]],
-) -> None:
-    embeds = [build_program_change_embed(program, "added") for program in added]
-    embeds.extend(build_program_change_embed(program, "removed") for program in removed)
-    for index in range(0, len(embeds), DISCORD_MAX_EMBEDS_PER_MESSAGE):
-        cooldown = await send_discord_payload(
-            session,
-            webhook_url,
-            {"embeds": embeds[index : index + DISCORD_MAX_EMBEDS_PER_MESSAGE]},
-        )
-        if index + DISCORD_MAX_EMBEDS_PER_MESSAGE < len(embeds):
-            await asyncio.sleep(max(MESSAGE_DELAY_SECONDS, cooldown))
-
-
 def select_new_items(
     results: list[Any], processed_ids: set[str]
 ) -> list[dict[str, Any]]:
@@ -761,43 +417,45 @@ def select_new_items(
     return new_items
 
 
+def total_crowdstream_pages(page_data: Mapping[str, Any]) -> int:
+    pagination = page_data.get("pagination_meta")
+    if not isinstance(pagination, Mapping):
+        raise CrowdstreamError("Bugcrowd response is missing pagination metadata")
+
+    total_pages = pagination.get("total_pages")
+    if (
+        not isinstance(total_pages, int)
+        or isinstance(total_pages, bool)
+        or total_pages < 1
+    ):
+        raise CrowdstreamError("Bugcrowd response has an invalid total page count")
+    return total_pages
+
+
 async def fetch_new_items(
     session: aiohttp.ClientSession,
     processed_ids: set[str],
-    programs: Sequence[dict[str, Any]],
+    pages: Sequence[int] = PAGE_NUMBERS_DESCENDING,
+    *,
+    full_backfill: bool = False,
 ) -> list[dict[str, Any]]:
     ordered_results: list[Any] = []
-    for program in programs:
-        program_slug = program["slug"]
-        first_page = await fetch_crowdstream_page(
-            session,
-            program_slug,
-            page=1,
-            allow_not_found=True,
-        )
-        if first_page is None:
-            program["crowdstream_enabled"] = False
-            continue
 
-        program["crowdstream_enabled"] = True
-        total_pages = crowdstream_total_pages(first_page, program_slug)
-        if total_pages == 0 and first_page["results"]:
-            raise CrowdstreamError(
-                f"Bugcrowd program {program_slug} returned reports but zero pages"
-            )
-        print(f"[*] {program_slug} exposes {total_pages} CrowdStream page(s).")
-        for page in range(total_pages, 1, -1):
-            page_data = await fetch_crowdstream_page(session, program_slug, page=page)
-            if page_data is None:
-                raise CrowdstreamError(
-                    f"Bugcrowd program {program_slug} page {page} disappeared"
-                )
-            ordered_results.extend(page_data["results"])
-        ordered_results.extend(first_page["results"])
+    if full_backfill:
+        print("[*] Discovering the final CrowdStream page...")
+        first_page_data = await fetch_crowdstream_page(session, page=1)
+        last_page = total_crowdstream_pages(first_page_data)
+        print(f"[*] Historical backfill will scan page {last_page} down to page 1.")
+        for page in range(last_page, 1, -1):
+            page_data = await fetch_crowdstream_page(session, page=page)
+            ordered_results.extend(reversed(page_data["results"]))
+        ordered_results.extend(reversed(first_page_data["results"]))
+        return select_new_items(ordered_results, processed_ids)
 
-    valid_results = [item for item in ordered_results if isinstance(item, dict)]
-    valid_results.sort(key=crowdstream_sort_key)
-    return select_new_items(valid_results, processed_ids)
+    for page in pages:
+        page_data = await fetch_crowdstream_page(session, page=page)
+        ordered_results.extend(reversed(page_data["results"]))
+    return select_new_items(ordered_results, processed_ids)
 
 
 async def deliver_new_items(
@@ -834,61 +492,38 @@ async def deliver_new_items(
 async def run_bot(
     webhook_url: str,
     history_file: Path = HISTORY_FILE,
-    programs_file: Path = PROGRAMS_FILE,
-    programs_webhook_url: str | None = None,
+    backfill_marker: Path = BACKFILL_COMPLETE_FILE,
 ) -> int:
     try:
         processed_ids = load_processed_ids(history_file)
-        programs = load_programs(programs_file)
-    except (HistoryError, ProgramsError) as exc:
+    except HistoryError as exc:
         print(f"[!] {exc}")
         return 1
     print(f"[*] Loaded {len(processed_ids)} historical submission entries.")
-    print(
-        f"[*] Refreshing the paid-program catalog from {len(programs)} saved programs."
-    )
+    marker_exists = await asyncio.to_thread(backfill_marker.is_file)
+    full_backfill = not marker_exists or not processed_ids
 
     timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS)
     try:
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            programs, added_programs, removed_programs = await refresh_programs(
-                session, programs
-            )
-            print(
-                f"[*] Scanning every CrowdStream page for {len(programs)} paid "
-                "programs."
-            )
             new_items = await fetch_new_items(
                 session,
                 processed_ids,
-                programs,
+                full_backfill=full_backfill,
             )
-            if added_programs or removed_programs:
-                print(
-                    f"[*] Paid-program changes: {len(added_programs)} added, "
-                    f"{len(removed_programs)} removed."
-                )
-                if programs_webhook_url:
-                    await deliver_program_changes(
-                        session,
-                        programs_webhook_url,
-                        added_programs,
-                        removed_programs,
-                    )
-                else:
-                    print(
-                        "[!] DISCORD_PROGRAMS_WEBHOOK_URL is not configured; "
-                        "program changes were recorded without a Discord alert."
-                    )
-            save_programs(programs, programs_file)
-
             if not new_items:
-                print("[*] Checked every CrowdStream page. No new reports detected.")
+                if full_backfill:
+                    mark_backfill_complete(backfill_marker)
+                    print("[*] Historical backfill is complete.")
+                else:
+                    pages = ", ".join(str(page) for page in PAGE_NUMBERS_DESCENDING)
+                    print(f"[*] Checked pages {pages}. No new submissions detected.")
                 return 0
 
             print(
-                f"[*] Found {len(new_items)} new reports across all pages. "
-                "Broadcasting globally oldest first..."
+                f"[*] Found {len(new_items)} new entries across pages "
+                f"{PAGE_NUMBERS_DESCENDING[0]} to {PAGE_NUMBERS_DESCENDING[-1]}. "
+                "Broadcasting alerts..."
             )
             failures = await deliver_new_items(
                 session,
@@ -897,13 +532,20 @@ async def run_bot(
                 processed_ids,
                 history_file,
             )
-    except (CrowdstreamError, DiscordDeliveryError, HistoryError, ProgramsError) as exc:
+    except (CrowdstreamError, HistoryError) as exc:
         print(f"[!] {exc}")
         return 1
 
     if failures:
         print(f"[!] Completed with {failures} undelivered alert(s).")
         return 1
+    if full_backfill:
+        try:
+            mark_backfill_complete(backfill_marker)
+        except HistoryError as exc:
+            print(f"[!] {exc}")
+            return 1
+        print("[*] Historical backfill is complete.")
     print(f"[*] Delivered and recorded {len(new_items)} new alert(s).")
     return 0
 
@@ -914,16 +556,7 @@ async def main() -> int:
     if not webhook_url:
         print("[!] Error: DISCORD_WEBHOOK_URL environment secret is missing.")
         return 1
-    return await run_bot(
-        webhook_url,
-        history_file=Path(
-            os.environ.get("CROWDSTREAM_HISTORY_FILE", str(HISTORY_FILE))
-        ),
-        programs_file=Path(
-            os.environ.get("CROWDSTREAM_PROGRAMS_FILE", str(PROGRAMS_FILE))
-        ),
-        programs_webhook_url=os.environ.get("DISCORD_PROGRAMS_WEBHOOK_URL"),
-    )
+    return await run_bot(webhook_url)
 
 
 if __name__ == "__main__":
