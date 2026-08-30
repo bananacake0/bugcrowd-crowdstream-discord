@@ -1005,11 +1005,6 @@
     "crowdstream_enabled": true
   },
   {
-    "slug": "requirement-yogi",
-    "name": "Requirement Yogi (Bug bounty)",
-    "crowdstream_enabled": true
-  },
-  {
     "slug": "resolutionde",
     "name": "Resolution",
     "crowdstream_enabled": true
@@ -1062,6 +1057,11 @@
   {
     "slug": "sky-plc-mbb-og",
     "name": "Sky UK/ROI Vulnerability Disclosure Program",
+    "crowdstream_enabled": true
+  },
+  {
+    "slug": "sky-plc-mbb-og1",
+    "name": "Sky Italy Vulnerability Disclosure Program",
     "crowdstream_enabled": true
   },
   {
