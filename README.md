@@ -1,17 +1,21 @@
 # Bugcrowd CrowdStream Discord bot
 
-Fetches public CrowdStream reports from every paid Bugcrowd bug-bounty program and posts them to Discord. The project currently runs manually: there is no GitHub Actions workflow, cron job, or enabled `systemd` timer.
+Fetches public CrowdStream reports from every paid Bugcrowd bug-bounty program and posts them to Discord. Runs can be started manually from GitHub Actions.
 
 ## Current behavior
 
-Each run performs one complete scan:
+The first run performs a complete backfill. It:
 
 1. Fetches every page of Bugcrowd's paid `bug_bounty` program catalog. VDPs are excluded.
 2. Probes page 1 of every program's engagement-specific CrowdStream.
 3. Treats a genuine HTTP 404 as CrowdStream disabled for that program.
 4. Reads `pagination_meta.total_pages` and fetches every advertised page, from the oldest page down to page 1.
 5. Merges reports from every program, removes duplicate or previously delivered submission IDs, and globally sorts the remaining reports oldest-first by acceptance or disclosure date.
-6. Delivers the reports to Discord and records each successfully delivered batch.
+6. Logs fetched, unique, duplicate, and conflicting duplicate records.
+7. Delivers the reports to Discord and records each successfully delivered batch.
+8. Writes `full_scan_complete: true` only after the complete scan and all report deliveries succeed.
+
+After that marker is present, each run still refreshes every paid-program catalog page and detects additions/removals, but checks only page 1 of each enabled CrowdStream. This keeps routine runs short while the processed-ID history prevents duplicates. Delete `scan_state.json` or set its marker to `false` to request another full backfill.
 
 "All reports" means every report exposed by the programs' public CrowdStream JSON endpoints. It does not include private submissions or reports Bugcrowd does not publish to CrowdStream.
 
@@ -38,18 +42,26 @@ New-program alerts also include metadata from the program's latest public change
 
 ## State files
 
-The repository intentionally starts with two valid empty JSON arrays:
+The repository intentionally starts with valid empty state files:
 
 | File                 | Purpose                                                                  |
 | -------------------- | ------------------------------------------------------------------------ |
 | `programs.json`      | Current paid-program catalog, names, slugs, and CrowdStream availability |
 | `processed_ids.json` | Submission IDs successfully delivered to Discord                         |
+| `scan_state.json`    | Whether the initial all-pages CrowdStream scan completed successfully    |
 
-On the first run, the bot repopulates `programs.json` and treats every currently visible CrowdStream report as new. During the latest development scan on 30 August 2026, the complete backfill contained 3,832 unique reports, or about 384 Discord messages. The live total will change.
+On the first run, the bot repopulates `programs.json`, audits duplicate IDs, and treats every currently visible CrowdStream report as new. During the latest development scan on 30 August 2026, the complete backfill contained 3,832 unique reports, or about 384 Discord messages. The live total will change.
 
 If the program-changes webhook is enabled while `programs.json` is empty, the first run also announces every paid program as newly added.
 
 Both files are written atomically. Preserve them between runs unless a deliberate full backfill is required.
+
+If an existing VPS already completed its full backfill before `scan_state.json` was added, seed the marker once before the next run:
+
+```bash
+sudo -u crowdstream sh -c \
+  'printf "{\\n  \\\"full_scan_complete\\\": true\\n}\\n" > /var/lib/bugcrowd-crowdstream-discord/scan_state.json'
+```
 
 ## Requirements
 
@@ -75,6 +87,7 @@ Configure these values:
 | `DISCORD_PROGRAMS_WEBHOOK_URL` | No | None | Webhook receiving paid-program additions and removals |
 | `CROWDSTREAM_HISTORY_FILE` | No | `processed_ids.json` | Persistent delivered-submission state |
 | `CROWDSTREAM_PROGRAMS_FILE` | No | `programs.json` | Persistent paid-program catalog state |
+| `CROWDSTREAM_SCAN_STATE_FILE` | No | `scan_state.json` | Initial full-scan completion marker |
 
 Never commit real webhook URLs. Rotate any webhook that has been exposed in chat, logs, or version control.
 
@@ -82,62 +95,18 @@ If program-change alerts are not needed, remove `DISCORD_PROGRAMS_WEBHOOK_URL` i
 
 ## Run locally
 
-Install the locked dependencies and run one complete scan:
+Install the locked dependencies and run one scan:
 
 ```bash
 uv sync --locked
 uv run --locked main.py
 ```
 
-The command may take several minutes because it fetches every CrowdStream page sequentially and honors Bugcrowd rate limits.
+The first command may take several minutes because it fetches every CrowdStream page sequentially. Later commands fetch page 1 only and honor Bugcrowd rate limits.
 
-## Manual VPS deployment
+## GitHub Actions test run
 
-The included `systemd` service is a hardened one-shot service. It runs only when manually started and cannot be enabled as a scheduled service in its current form.
-
-The following example assumes Debian or Ubuntu, `uv` installed at `/usr/local/bin/uv`, and the repository URL stored in `REPOSITORY_URL`:
-
-```bash
-sudo useradd --system --create-home --shell /usr/sbin/nologin crowdstream
-sudo install -d -o crowdstream -g crowdstream /opt/bugcrowd-crowdstream-discord
-sudo -u crowdstream git clone "$REPOSITORY_URL" /opt/bugcrowd-crowdstream-discord
-cd /opt/bugcrowd-crowdstream-discord
-sudo -u crowdstream /usr/local/bin/uv sync --locked --no-dev
-
-sudo install -d -m 700 -o crowdstream -g crowdstream \
-  /var/lib/bugcrowd-crowdstream-discord
-sudo install -m 600 -o crowdstream -g crowdstream \
-  programs.json processed_ids.json /var/lib/bugcrowd-crowdstream-discord/
-sudo install -m 640 -o root -g crowdstream /dev/null \
-  /etc/bugcrowd-crowdstream-discord.env
-sudoedit /etc/bugcrowd-crowdstream-discord.env
-```
-
-Add the following configuration to `/etc/bugcrowd-crowdstream-discord.env`:
-
-```dotenv
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/replace-with-your-webhook
-DISCORD_PROGRAMS_WEBHOOK_URL=https://discord.com/api/webhooks/replace-with-your-program-changes-webhook
-CROWDSTREAM_HISTORY_FILE=/var/lib/bugcrowd-crowdstream-discord/processed_ids.json
-CROWDSTREAM_PROGRAMS_FILE=/var/lib/bugcrowd-crowdstream-discord/programs.json
-```
-
-Install the manual service:
-
-```bash
-sudo install -m 644 deploy/systemd/crowdstream.service \
-  /etc/systemd/system/crowdstream.service
-sudo systemctl daemon-reload
-```
-
-Start a scan and follow its logs:
-
-```bash
-sudo systemctl start --no-block crowdstream.service
-sudo journalctl -fu crowdstream.service
-```
-
-Run `sudo systemctl start crowdstream.service` whenever another scan is needed. The state under `/var/lib/bugcrowd-crowdstream-discord` survives Git updates and prevents duplicate report delivery.
+The `CrowdStream to Discord` workflow is manual-only. Add `DISCORD_WEBHOOK_URL` and optional `DISCORD_PROGRAMS_WEBHOOK_URL` as repository secrets, then use **Actions → CrowdStream to Discord → Run workflow**. The workflow runs the checks, executes `uv run --locked main.py`, and commits updated `processed_ids.json`, `programs.json`, and `scan_state.json` back to the default branch.
 
 ## Development checks
 
@@ -147,4 +116,4 @@ uv run --locked ruff format --check .
 uv run --locked -m unittest discover -s tests -v
 ```
 
-The current suite contains 30 tests covering catalog pagination, complete CrowdStream pagination, global ordering, date semantics, embed construction, retries, Discord batching, atomic state persistence, empty-state bootstrap, and VPS state-path configuration.
+The current suite contains 35 tests covering catalog pagination, complete CrowdStream pagination, page-one incremental scans, global ordering, date semantics, embed construction, retries, Discord batching, atomic state persistence, empty-state bootstrap, and VPS state-path configuration.

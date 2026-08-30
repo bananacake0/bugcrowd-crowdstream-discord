@@ -17,6 +17,7 @@ BUGCROWD_ORIGIN = "https://bugcrowd.com"
 PAID_PROGRAMS_URL = f"{BUGCROWD_ORIGIN}/engagements-us.json"
 HISTORY_FILE = Path("processed_ids.json")
 PROGRAMS_FILE = Path("programs.json")
+SCAN_STATE_FILE = Path("scan_state.json")
 PROGRAM_SLUG_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]*$")
 PROGRAM_PATH_PATTERN = re.compile(r"^/engagements/([A-Za-z0-9][A-Za-z0-9-]*)/?$")
 REQUEST_TIMEOUT_SECONDS = 30
@@ -46,6 +47,10 @@ class HistoryError(RuntimeError):
 
 class ProgramsError(RuntimeError):
     """Raised when the monitored-program configuration cannot be trusted."""
+
+
+class ScanStateError(RuntimeError):
+    """Raised when full-scan completion state cannot be trusted or persisted."""
 
 
 class BugcrowdRequestError(RuntimeError):
@@ -218,11 +223,45 @@ def load_programs(programs_file: Path = PROGRAMS_FILE) -> list[dict[str, Any]]:
     return programs
 
 
+def load_scan_state(scan_state_file: Path = SCAN_STATE_FILE) -> dict[str, Any]:
+    try:
+        raw_data = scan_state_file.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return {"full_scan_complete": False}
+    except OSError as exc:
+        raise ScanStateError(
+            f"Could not read scan state file {scan_state_file}: {exc}"
+        ) from exc
+
+    try:
+        data = json.loads(raw_data)
+    except json.JSONDecodeError as exc:
+        raise ScanStateError(
+            f"Scan state file {scan_state_file} contains invalid JSON"
+        ) from exc
+    if not isinstance(data, Mapping) or not isinstance(
+        data.get("full_scan_complete"), bool
+    ):
+        raise ScanStateError(
+            f"Scan state file {scan_state_file} must contain a boolean "
+            "full_scan_complete value"
+        )
+    return dict(data)
+
+
 def save_programs(
     programs: Sequence[Mapping[str, Any]], programs_file: Path = PROGRAMS_FILE
 ) -> None:
     ordered_programs = sorted(programs, key=lambda program: program["slug"])
     save_json_atomically(ordered_programs, programs_file, ProgramsError, "programs")
+
+
+def save_scan_state(
+    state: Mapping[str, Any], scan_state_file: Path = SCAN_STATE_FILE
+) -> None:
+    if not isinstance(state.get("full_scan_complete"), bool):
+        raise ScanStateError("Scan state requires a boolean full_scan_complete value")
+    save_json_atomically(dict(state), scan_state_file, ScanStateError, "scan state")
 
 
 def bugcrowd_url(path: str | None) -> str:
@@ -903,6 +942,8 @@ async def fetch_new_items(
     session: aiohttp.ClientSession,
     processed_ids: set[str],
     programs: Sequence[dict[str, Any]],
+    *,
+    full_scan: bool = True,
 ) -> list[dict[str, Any]]:
     ordered_results: list[Any] = []
     for program in programs:
@@ -918,6 +959,10 @@ async def fetch_new_items(
             continue
 
         program["crowdstream_enabled"] = True
+        if not full_scan:
+            ordered_results.extend(first_page["results"])
+            continue
+
         total_pages = crowdstream_total_pages(first_page, program_slug)
         if total_pages == 0 and first_page["results"]:
             raise CrowdstreamError(
@@ -935,7 +980,28 @@ async def fetch_new_items(
 
     valid_results = [item for item in ordered_results if isinstance(item, dict)]
     valid_results.sort(key=crowdstream_sort_key)
-    return select_new_items(valid_results, processed_ids)
+    unique_results: list[dict[str, Any]] = []
+    unique_by_id: dict[str, dict[str, Any]] = {}
+    duplicate_records = 0
+    conflicting_duplicates = 0
+    for item in valid_results:
+        submission_id = item.get("id")
+        if not isinstance(submission_id, str) or not submission_id:
+            continue
+        previous = unique_by_id.get(submission_id)
+        if previous is not None:
+            duplicate_records += 1
+            if previous != item:
+                conflicting_duplicates += 1
+            continue
+        unique_by_id[submission_id] = item
+        unique_results.append(item)
+    print(
+        f"[*] CrowdStream records: {len(valid_results)} fetched, "
+        f"{len(unique_results)} unique IDs, {duplicate_records} duplicate records, "
+        f"{conflicting_duplicates} conflicting duplicate payloads."
+    )
+    return select_new_items(unique_results, processed_ids)
 
 
 async def deliver_new_items(
@@ -974,32 +1040,35 @@ async def run_bot(
     history_file: Path = HISTORY_FILE,
     programs_file: Path = PROGRAMS_FILE,
     programs_webhook_url: str | None = None,
+    scan_state_file: Path = SCAN_STATE_FILE,
 ) -> int:
     try:
         processed_ids = load_processed_ids(history_file)
         programs = load_programs(programs_file)
-    except (HistoryError, ProgramsError) as exc:
+        scan_state = load_scan_state(scan_state_file)
+    except (HistoryError, ProgramsError, ScanStateError) as exc:
         print(f"[!] {exc}")
         return 1
+    full_scan = not scan_state["full_scan_complete"]
     print(f"[*] Loaded {len(processed_ids)} historical submission entries.")
     print(
         f"[*] Refreshing the paid-program catalog from {len(programs)} saved programs."
     )
 
     timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS)
+    failures = 0
     try:
         async with aiohttp.ClientSession(timeout=timeout) as session:
             programs, added_programs, removed_programs = await refresh_programs(
                 session, programs
             )
-            print(
-                f"[*] Scanning every CrowdStream page for {len(programs)} paid "
-                "programs."
-            )
+            mode = "every CrowdStream page" if full_scan else "page 1 only"
+            print(f"[*] Scanning {mode} for {len(programs)} paid programs.")
             new_items = await fetch_new_items(
                 session,
                 processed_ids,
                 programs,
+                full_scan=full_scan,
             )
             if added_programs or removed_programs:
                 print(
@@ -1033,21 +1102,37 @@ async def run_bot(
             save_programs(programs, programs_file)
 
             if not new_items:
-                print("[*] Checked every CrowdStream page. No new reports detected.")
-                return 0
+                print(f"[*] Checked {mode}. No new reports detected.")
+            else:
+                print(
+                    f"[*] Found {len(new_items)} new reports across {mode}. "
+                    "Broadcasting globally oldest first..."
+                )
+                failures = await deliver_new_items(
+                    session,
+                    webhook_url,
+                    new_items,
+                    processed_ids,
+                    history_file,
+                )
 
-            print(
-                f"[*] Found {len(new_items)} new reports across all pages. "
-                "Broadcasting globally oldest first..."
-            )
-            failures = await deliver_new_items(
-                session,
-                webhook_url,
-                new_items,
-                processed_ids,
-                history_file,
-            )
-    except (CrowdstreamError, DiscordDeliveryError, HistoryError, ProgramsError) as exc:
+            if full_scan and (not new_items or failures == 0):
+                save_scan_state(
+                    {
+                        **scan_state,
+                        "full_scan_complete": True,
+                        "completed_at": datetime.now().astimezone().isoformat(),
+                    },
+                    scan_state_file,
+                )
+                print("[*] Full CrowdStream scan completed; future runs use page 1.")
+    except (
+        CrowdstreamError,
+        DiscordDeliveryError,
+        HistoryError,
+        ProgramsError,
+        ScanStateError,
+    ) as exc:
         print(f"[!] {exc}")
         return 1
 
@@ -1073,6 +1158,9 @@ async def main() -> int:
             os.environ.get("CROWDSTREAM_PROGRAMS_FILE", str(PROGRAMS_FILE))
         ),
         programs_webhook_url=os.environ.get("DISCORD_PROGRAMS_WEBHOOK_URL"),
+        scan_state_file=Path(
+            os.environ.get("CROWDSTREAM_SCAN_STATE_FILE", str(SCAN_STATE_FILE))
+        ),
     )
 
 
