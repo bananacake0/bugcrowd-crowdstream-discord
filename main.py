@@ -22,7 +22,6 @@ PROGRAM_SLUG_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]*$")
 PROGRAM_PATH_PATTERN = re.compile(r"^/engagements/([A-Za-z0-9][A-Za-z0-9-]*)/?$")
 REQUEST_TIMEOUT_SECONDS = 30
 BUGCROWD_MAX_ATTEMPTS = 5
-PROGRAM_FETCH_CONCURRENCY = 4
 DISCORD_MAX_ATTEMPTS = 3
 DISCORD_RETRY_BASE_SECONDS = 1.0
 DISCORD_MAX_EMBEDS_PER_MESSAGE = 10
@@ -992,25 +991,14 @@ async def fetch_new_items(
     *,
     full_scan: bool = True,
 ) -> list[dict[str, Any]]:
-    semaphore = asyncio.Semaphore(PROGRAM_FETCH_CONCURRENCY)
-
-    async def fetch_program(program: Mapping[str, Any]) -> list[Any] | None:
-        async with semaphore:
-            return await fetch_program_crowdstream(
-                session, program["slug"], full_scan=full_scan
-            )
-
-    try:
-        async with asyncio.TaskGroup() as group:
-            tasks = [group.create_task(fetch_program(program)) for program in programs]
-    except* CrowdstreamError as error_group:
-        raise error_group.exceptions[0] from None
-
-    # Merge in program order, never completion order: crowdstream_sort_key resolves
-    # to whole days, so the stable sort below leaves same-day reports in this order.
+    # Sequential on purpose. Bugcrowd rate-limits per minute, so fetching programs
+    # concurrently only spends that quota faster: a run at four at a time drew 18
+    # rate limits in clusters of four and took 3m41s, against 15s one at a time.
     ordered_results: list[Any] = []
-    for program, task in zip(programs, tasks, strict=True):
-        program_results = task.result()
+    for program in programs:
+        program_results = await fetch_program_crowdstream(
+            session, program["slug"], full_scan=full_scan
+        )
         if program_results is None:
             program["crowdstream_enabled"] = False
             continue
