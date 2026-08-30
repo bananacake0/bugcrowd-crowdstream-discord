@@ -480,6 +480,101 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual([call[2]["params"]["page"] for call in session.calls], [1, 2])
 
+    async def test_fetches_latest_program_metadata_from_changelog(self):
+        session = FakeSession(
+            [
+                FakeResponse(
+                    200,
+                    payload={
+                        "changelogs": [
+                            {
+                                "id": "older",
+                                "publishedAt": "2026-01-01T00:00:00Z",
+                                "changelogState": "Archived",
+                            },
+                            {
+                                "id": "latest",
+                                "publishedAt": "2026-08-30T00:00:00Z",
+                                "changelogState": "Latest",
+                            },
+                        ]
+                    },
+                ),
+                FakeResponse(
+                    200,
+                    payload={
+                        "industryName": "Finance",
+                        "statusLabel": "In progress",
+                        "participation": "open",
+                        "rewardAllocation": "pay_for_success",
+                        "publishedAt": "2026-08-30T00:00:00Z",
+                        "logoUrl": "https://example.com/logo.png",
+                        "data": {
+                            "brief": {"tagline": "Find bugs safely."},
+                            "scope": [
+                                {
+                                    "inScope": True,
+                                    "targets": [{"id": "one"}, {"id": "two"}],
+                                },
+                                {"inScope": False, "targets": [{"id": "three"}]},
+                            ],
+                        },
+                    },
+                ),
+            ]
+        )
+
+        metadata = await main.fetch_program_metadata(session, "nubank")
+
+        self.assertEqual(
+            metadata,
+            {
+                "industry": "Finance",
+                "status": "In progress",
+                "participation": "open",
+                "reward_model": "pay_for_success",
+                "published_at": "2026-08-30T00:00:00Z",
+                "target_count": 2,
+                "logo_url": "https://example.com/logo.png",
+                "tagline": "Find bugs safely.",
+            },
+        )
+        self.assertEqual(
+            [call[1] for call in session.calls],
+            [
+                "https://bugcrowd.com/engagements/nubank/changelog.json",
+                "https://bugcrowd.com/engagements/nubank/changelog/latest.json",
+            ],
+        )
+
+    def test_program_change_embed_includes_metadata(self):
+        embed = main.build_program_change_embed(
+            {
+                "slug": "nubank",
+                "name": "Nubank",
+                "crowdstream_enabled": True,
+            },
+            "added",
+            {
+                "industry": "Finance",
+                "status": "In progress",
+                "participation": "open",
+                "reward_model": "pay_for_success",
+                "published_at": "2026-08-30T00:00:00Z",
+                "target_count": 2,
+                "logo_url": "https://example.com/logo.png",
+                "tagline": "Find bugs safely.",
+            },
+        )
+
+        fields = {field["name"]: field["value"] for field in embed["fields"]}
+        self.assertEqual(fields["Industry"], "Finance")
+        self.assertEqual(fields["Reward model"], "Pay For Success")
+        self.assertEqual(fields["In-scope targets"], "2")
+        self.assertEqual(fields["Published"], "30 Aug 2026")
+        self.assertEqual(embed["thumbnail"], {"url": "https://example.com/logo.png"})
+        self.assertIn("Find bugs safely.", embed["description"])
+
     @patch("main.fetch_paid_programs", new_callable=AsyncMock)
     async def test_refresh_programs_preserves_known_state_and_marks_new_unknown(
         self, fetch_paid_programs

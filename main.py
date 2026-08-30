@@ -458,6 +458,95 @@ async def refresh_programs(
     return refreshed, added, removed
 
 
+async def fetch_program_metadata(
+    session: aiohttp.ClientSession, program_slug: str
+) -> dict[str, Any]:
+    changelog_url = f"{BUGCROWD_ORIGIN}/engagements/{program_slug}/changelog.json"
+    try:
+        changelog_data = await fetch_bugcrowd_json(
+            session,
+            changelog_url,
+            params={},
+            description=f"Bugcrowd program {program_slug} changelog index",
+        )
+    except BugcrowdRequestError as exc:
+        raise ProgramsError(str(exc)) from exc
+    assert changelog_data is not None
+
+    changelogs = changelog_data.get("changelogs")
+    if not isinstance(changelogs, list):
+        raise ProgramsError(
+            f"Bugcrowd program {program_slug} changelog has an unexpected shape"
+        )
+    valid_changelogs = [
+        changelog
+        for changelog in changelogs
+        if isinstance(changelog, Mapping)
+        and isinstance(changelog.get("id"), str)
+        and changelog["id"]
+    ]
+    if not valid_changelogs:
+        return {}
+
+    latest = next(
+        (
+            changelog
+            for changelog in valid_changelogs
+            if changelog.get("changelogState") == "Latest"
+        ),
+        max(
+            valid_changelogs,
+            key=lambda changelog: text_value(changelog.get("publishedAt")),
+        ),
+    )
+    changelog_id = latest["id"]
+    detail_url = (
+        f"{BUGCROWD_ORIGIN}/engagements/{program_slug}/changelog/{changelog_id}.json"
+    )
+    try:
+        detail = await fetch_bugcrowd_json(
+            session,
+            detail_url,
+            params={},
+            description=f"Bugcrowd program {program_slug} latest changelog",
+        )
+    except BugcrowdRequestError as exc:
+        raise ProgramsError(str(exc)) from exc
+    assert detail is not None
+
+    detail_data = detail.get("data")
+    if not isinstance(detail_data, Mapping):
+        raise ProgramsError(
+            f"Bugcrowd program {program_slug} changelog has no data metadata"
+        )
+    brief = detail_data.get("brief")
+    if not isinstance(brief, Mapping):
+        raise ProgramsError(
+            f"Bugcrowd program {program_slug} changelog has no brief metadata"
+        )
+
+    scope = detail_data.get("scope")
+    target_count = 0
+    if isinstance(scope, list):
+        for group in scope:
+            if not isinstance(group, Mapping) or group.get("inScope") is not True:
+                continue
+            targets = group.get("targets")
+            if isinstance(targets, list):
+                target_count += sum(isinstance(target, Mapping) for target in targets)
+
+    return {
+        "industry": text_value(detail.get("industryName")),
+        "status": text_value(detail.get("statusLabel")),
+        "participation": text_value(detail.get("participation")),
+        "reward_model": text_value(detail.get("rewardAllocation")),
+        "published_at": text_value(detail.get("publishedAt")),
+        "target_count": target_count,
+        "logo_url": text_value(detail.get("logoUrl")),
+        "tagline": text_value(brief.get("tagline")),
+    }
+
+
 def crowdstream_total_pages(data: Mapping[str, Any], program_slug: str) -> int:
     pagination = data.get("pagination_meta")
     if not isinstance(pagination, Mapping):
@@ -699,28 +788,66 @@ async def send_to_discord(
 
 
 def build_program_change_embed(
-    program: Mapping[str, Any], change: str
+    program: Mapping[str, Any],
+    change: str,
+    metadata: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     added = change == "added"
     slug = program["slug"]
     name = program["name"]
-    return {
+    metadata = metadata or {}
+    fields = [
+        {"name": "Slug", "value": f"`{slug}`", "inline": False},
+        {
+            "name": "CrowdStream",
+            "value": (
+                "Enabled"
+                if program.get("crowdstream_enabled") is True
+                else "Not enabled"
+            ),
+            "inline": False,
+        },
+    ]
+    for label, key in (
+        ("Industry", "industry"),
+        ("Status", "status"),
+        ("Participation", "participation"),
+        ("Reward model", "reward_model"),
+    ):
+        if value := text_value(metadata.get(key)):
+            fields.append(
+                {
+                    "name": label,
+                    "value": value.replace("_", " ").title(),
+                    "inline": False,
+                }
+            )
+    if (
+        isinstance(target_count := metadata.get("target_count"), int)
+        and target_count > 0
+    ):
+        fields.append(
+            {"name": "In-scope targets", "value": str(target_count), "inline": False}
+        )
+    if published_at := text_value(metadata.get("published_at")):
+        fields.append(
+            {
+                "name": "Published",
+                "value": format_iso_date(published_at),
+                "inline": False,
+            }
+        )
+    embed = {
         "title": "New paid Bugcrowd program" if added else "Paid program removed",
         "description": f"[{name}]({BUGCROWD_ORIGIN}/engagements/{slug})",
         "color": 3066993 if added else 15158332,
-        "fields": [
-            {"name": "Slug", "value": f"`{slug}`", "inline": False},
-            {
-                "name": "CrowdStream",
-                "value": (
-                    "Enabled"
-                    if program.get("crowdstream_enabled") is True
-                    else "Not enabled"
-                ),
-                "inline": False,
-            },
-        ],
+        "fields": fields,
     }
+    if logo_url := text_value(metadata.get("logo_url")):
+        embed["thumbnail"] = {"url": logo_url}
+    if tagline := text_value(metadata.get("tagline")):
+        embed["description"] += f"\n\n{tagline[:500]}"
+    return embed
 
 
 async def deliver_program_changes(
@@ -728,9 +855,21 @@ async def deliver_program_changes(
     webhook_url: str,
     added: Sequence[Mapping[str, Any]],
     removed: Sequence[Mapping[str, Any]],
+    metadata_by_slug: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> None:
-    embeds = [build_program_change_embed(program, "added") for program in added]
-    embeds.extend(build_program_change_embed(program, "removed") for program in removed)
+    metadata_by_slug = metadata_by_slug or {}
+    embeds = [
+        build_program_change_embed(
+            program, "added", metadata_by_slug.get(program["slug"])
+        )
+        for program in added
+    ]
+    embeds.extend(
+        build_program_change_embed(
+            program, "removed", metadata_by_slug.get(program["slug"])
+        )
+        for program in removed
+    )
     for index in range(0, len(embeds), DISCORD_MAX_EMBEDS_PER_MESSAGE):
         cooldown = await send_discord_payload(
             session,
@@ -869,11 +1008,23 @@ async def run_bot(
                     f"{len(removed_programs)} removed."
                 )
                 if programs_webhook_url:
+                    metadata_by_slug: dict[str, Mapping[str, Any]] = {}
+                    for program in added_programs:
+                        try:
+                            metadata_by_slug[
+                                program["slug"]
+                            ] = await fetch_program_metadata(session, program["slug"])
+                        except ProgramsError as exc:
+                            print(
+                                f"[!] Could not fetch metadata for "
+                                f"{program['slug']}: {exc}"
+                            )
                     await deliver_program_changes(
                         session,
                         programs_webhook_url,
                         added_programs,
                         removed_programs,
+                        metadata_by_slug,
                     )
                 else:
                     print(
