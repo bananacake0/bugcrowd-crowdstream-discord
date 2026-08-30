@@ -22,6 +22,7 @@ PROGRAM_SLUG_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]*$")
 PROGRAM_PATH_PATTERN = re.compile(r"^/engagements/([A-Za-z0-9][A-Za-z0-9-]*)/?$")
 REQUEST_TIMEOUT_SECONDS = 30
 BUGCROWD_MAX_ATTEMPTS = 5
+PROGRAM_FETCH_CONCURRENCY = 4
 DISCORD_MAX_ATTEMPTS = 3
 DISCORD_RETRY_BASE_SECONDS = 1.0
 DISCORD_MAX_EMBEDS_PER_MESSAGE = 10
@@ -947,6 +948,43 @@ def select_new_items(
     return new_items
 
 
+async def fetch_program_crowdstream(
+    session: aiohttp.ClientSession,
+    program_slug: str,
+    *,
+    full_scan: bool,
+) -> list[Any] | None:
+    """Return one program's reports oldest-first, or None when CrowdStream is off."""
+    first_page = await fetch_crowdstream_page(
+        session,
+        program_slug,
+        page=1,
+        allow_not_found=True,
+    )
+    if first_page is None:
+        return None
+    if not full_scan:
+        return list(first_page["results"])
+
+    total_pages = crowdstream_total_pages(first_page, program_slug)
+    if total_pages == 0 and first_page["results"]:
+        raise CrowdstreamError(
+            f"Bugcrowd program {program_slug} returned reports but zero pages"
+        )
+    print(f"[*] {program_slug} exposes {total_pages} CrowdStream page(s).")
+
+    results: list[Any] = []
+    for page in range(total_pages, 1, -1):
+        page_data = await fetch_crowdstream_page(session, program_slug, page=page)
+        if page_data is None:
+            raise CrowdstreamError(
+                f"Bugcrowd program {program_slug} page {page} disappeared"
+            )
+        results.extend(page_data["results"])
+    results.extend(first_page["results"])
+    return results
+
+
 async def fetch_new_items(
     session: aiohttp.ClientSession,
     processed_ids: set[str],
@@ -954,38 +992,30 @@ async def fetch_new_items(
     *,
     full_scan: bool = True,
 ) -> list[dict[str, Any]]:
+    semaphore = asyncio.Semaphore(PROGRAM_FETCH_CONCURRENCY)
+
+    async def fetch_program(program: Mapping[str, Any]) -> list[Any] | None:
+        async with semaphore:
+            return await fetch_program_crowdstream(
+                session, program["slug"], full_scan=full_scan
+            )
+
+    try:
+        async with asyncio.TaskGroup() as group:
+            tasks = [group.create_task(fetch_program(program)) for program in programs]
+    except* CrowdstreamError as error_group:
+        raise error_group.exceptions[0] from None
+
+    # Merge in program order, never completion order: crowdstream_sort_key resolves
+    # to whole days, so the stable sort below leaves same-day reports in this order.
     ordered_results: list[Any] = []
-    for program in programs:
-        program_slug = program["slug"]
-        first_page = await fetch_crowdstream_page(
-            session,
-            program_slug,
-            page=1,
-            allow_not_found=True,
-        )
-        if first_page is None:
+    for program, task in zip(programs, tasks, strict=True):
+        program_results = task.result()
+        if program_results is None:
             program["crowdstream_enabled"] = False
             continue
-
         program["crowdstream_enabled"] = True
-        if not full_scan:
-            ordered_results.extend(first_page["results"])
-            continue
-
-        total_pages = crowdstream_total_pages(first_page, program_slug)
-        if total_pages == 0 and first_page["results"]:
-            raise CrowdstreamError(
-                f"Bugcrowd program {program_slug} returned reports but zero pages"
-            )
-        print(f"[*] {program_slug} exposes {total_pages} CrowdStream page(s).")
-        for page in range(total_pages, 1, -1):
-            page_data = await fetch_crowdstream_page(session, program_slug, page=page)
-            if page_data is None:
-                raise CrowdstreamError(
-                    f"Bugcrowd program {program_slug} page {page} disappeared"
-                )
-            ordered_results.extend(page_data["results"])
-        ordered_results.extend(first_page["results"])
+        ordered_results.extend(program_results)
 
     valid_results = [item for item in ordered_results if isinstance(item, dict)]
     valid_results.sort(key=crowdstream_sort_key)

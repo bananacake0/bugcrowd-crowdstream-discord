@@ -1,3 +1,4 @@
+import asyncio
 import json
 import tempfile
 import unittest
@@ -396,20 +397,33 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
     async def test_fetches_all_program_pages_then_globally_sorts_oldest_first(
         self, fetch_page
     ):
-        fetch_page.side_effect = [
-            {
+        pages = {
+            ("atlassian", 1): {
                 "results": [{"id": "atlassian-new", "accepted_at": "30 Aug 2026"}],
                 "pagination_meta": {"total_pages": 2},
             },
-            {"results": [{"id": "atlassian-older", "accepted_at": "10 Aug 2026"}]},
-            None,
-            {
+            ("atlassian", 2): {
+                "results": [{"id": "atlassian-older", "accepted_at": "10 Aug 2026"}]
+            },
+            ("launchdarkly", 1): None,
+            ("rapyd", 1): {
                 "results": [{"id": "rapyd-newest", "accepted_at": "31 Aug 2026"}],
                 "pagination_meta": {"total_pages": 3},
             },
-            {"results": [{"id": "rapyd-oldest", "accepted_at": "5 Aug 2026"}]},
-            {"results": [{"id": "rapyd-middle", "accepted_at": "20 Aug 2026"}]},
-        ]
+            ("rapyd", 3): {
+                "results": [{"id": "rapyd-oldest", "accepted_at": "5 Aug 2026"}]
+            },
+            ("rapyd", 2): {
+                "results": [{"id": "rapyd-middle", "accepted_at": "20 Aug 2026"}]
+            },
+        }
+
+        async def fetch(_session, slug, *, page, allow_not_found=False):
+            # Yield so the programs genuinely interleave under the semaphore.
+            await asyncio.sleep(0)
+            return pages[(slug, page)]
+
+        fetch_page.side_effect = fetch
         session = object()
         programs = [
             {
@@ -427,24 +441,21 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
 
         new_items = await main.fetch_new_items(session, set(), programs)
 
+        # Programs run concurrently, so only the per-program page order is fixed:
+        # page 1 first (it carries the count), then the rest oldest page first.
+        pages_by_slug: dict[str, list[int]] = {}
+        for call in fetch_page.await_args_list:
+            pages_by_slug.setdefault(call.args[1], []).append(call.kwargs["page"])
         self.assertEqual(
-            [call.args[1] for call in fetch_page.await_args_list],
-            [
-                "atlassian",
-                "atlassian",
-                "launchdarkly",
-                "rapyd",
-                "rapyd",
-                "rapyd",
-            ],
+            pages_by_slug,
+            {"atlassian": [1, 2], "launchdarkly": [1], "rapyd": [1, 3, 2]},
         )
-        self.assertEqual(
-            [call.kwargs["page"] for call in fetch_page.await_args_list],
-            [1, 2, 1, 1, 3, 2],
-        )
-        self.assertTrue(fetch_page.await_args_list[0].kwargs["allow_not_found"])
-        self.assertTrue(fetch_page.await_args_list[2].kwargs["allow_not_found"])
-        self.assertTrue(fetch_page.await_args_list[3].kwargs["allow_not_found"])
+        first_calls = [
+            call for call in fetch_page.await_args_list if call.kwargs["page"] == 1
+        ]
+        self.assertEqual(len(first_calls), 3)
+        for call in first_calls:
+            self.assertTrue(call.kwargs["allow_not_found"])
         self.assertTrue(programs[0]["crowdstream_enabled"])
         self.assertFalse(programs[1]["crowdstream_enabled"])
         self.assertTrue(programs[2]["crowdstream_enabled"])
@@ -457,6 +468,32 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
                 "atlassian-new",
                 "rapyd-newest",
             ],
+        )
+
+    @patch("main.fetch_crowdstream_page", new_callable=AsyncMock)
+    async def test_same_day_reports_keep_program_order_not_completion_order(
+        self, fetch_page
+    ):
+        # Every report shares a date, so the stable sort cannot reorder them: the
+        # merge must follow the programs list even though "slow" finishes last.
+        delays = {"slow": 0.05, "quick": 0.0}
+
+        async def fetch(_session, slug, *, page, allow_not_found=False):
+            await asyncio.sleep(delays[slug])
+            return {"results": [{"id": f"{slug}-report", "accepted_at": "30 Aug 2026"}]}
+
+        fetch_page.side_effect = fetch
+        programs = [
+            {"slug": "slow", "name": "Slow", "crowdstream_enabled": True},
+            {"slug": "quick", "name": "Quick", "crowdstream_enabled": True},
+        ]
+
+        new_items = await main.fetch_new_items(
+            object(), set(), programs, full_scan=False
+        )
+
+        self.assertEqual(
+            [item["id"] for item in new_items], ["slow-report", "quick-report"]
         )
 
     @patch("main.fetch_crowdstream_page", new_callable=AsyncMock)
