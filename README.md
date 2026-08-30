@@ -42,3 +42,57 @@ successful batches even if a later batch fails.
 If the state commit is rejected, allow GitHub Actions to write repository
 contents under **Settings → Actions → General → Workflow permissions** and make
 sure branch protection permits the `github-actions[bot]` update.
+
+## VPS with systemd
+
+The included service runs the complete all-program, all-page scan once per hour
+at 12 minutes past the hour. It uses a dedicated unprivileged account and keeps
+mutable state in `/var/lib/bugcrowd-crowdstream-discord`, separate from the Git
+checkout. Disable the GitHub Actions schedule when enabling this timer; running
+both schedulers would maintain separate histories and duplicate Discord alerts.
+
+The example below assumes a Debian or Ubuntu VPS, the repository is available
+as `$REPOSITORY_URL`, and `uv` is installed at `/usr/local/bin/uv`.
+
+```bash
+sudo useradd --system --create-home --shell /usr/sbin/nologin crowdstream
+sudo install -d -o crowdstream -g crowdstream /opt/bugcrowd-crowdstream-discord
+sudo -u crowdstream git clone "$REPOSITORY_URL" /opt/bugcrowd-crowdstream-discord
+cd /opt/bugcrowd-crowdstream-discord
+sudo -u crowdstream /usr/local/bin/uv sync --locked --no-dev
+
+sudo install -d -m 700 -o crowdstream -g crowdstream \
+  /var/lib/bugcrowd-crowdstream-discord
+sudo install -m 600 -o crowdstream -g crowdstream programs.json \
+  /var/lib/bugcrowd-crowdstream-discord/programs.json
+sudo install -m 640 -o root -g crowdstream /dev/null \
+  /etc/bugcrowd-crowdstream-discord.env
+sudoedit /etc/bugcrowd-crowdstream-discord.env
+```
+
+Add these values to `/etc/bugcrowd-crowdstream-discord.env`:
+
+```dotenv
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/replace-with-your-webhook
+DISCORD_PROGRAMS_WEBHOOK_URL=https://discord.com/api/webhooks/replace-with-your-program-changes-webhook
+CROWDSTREAM_HISTORY_FILE=/var/lib/bugcrowd-crowdstream-discord/processed_ids.json
+CROWDSTREAM_PROGRAMS_FILE=/var/lib/bugcrowd-crowdstream-discord/programs.json
+```
+
+Install and start the timer:
+
+```bash
+sudo install -m 644 deploy/systemd/crowdstream.service \
+  /etc/systemd/system/crowdstream.service
+sudo install -m 644 deploy/systemd/crowdstream.timer \
+  /etc/systemd/system/crowdstream.timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now crowdstream.timer
+sudo systemctl start crowdstream.service
+```
+
+Follow the first run with
+`journalctl -u crowdstream.service -f`. Because the repository intentionally has
+no `processed_ids.json`, the first run treats all currently visible reports as
+new and sends the full backfill. Later runs persist IDs in `/var/lib` and send
+only reports not already recorded.

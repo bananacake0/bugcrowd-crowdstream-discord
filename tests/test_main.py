@@ -635,5 +635,32 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
             sleep.assert_awaited_once_with(3.0)
 
 
+class MainConfigurationTests(unittest.IsolatedAsyncioTestCase):
+    @patch("main.run_bot", new_callable=AsyncMock)
+    @patch("main.load_dotenv")
+    async def test_main_passes_vps_state_paths_from_environment(
+        self, load_dotenv, run_bot
+    ):
+        run_bot.return_value = 0
+        environment = {
+            "DISCORD_WEBHOOK_URL": "https://discord.com/report-webhook",
+            "DISCORD_PROGRAMS_WEBHOOK_URL": "https://discord.com/program-webhook",
+            "CROWDSTREAM_HISTORY_FILE": "/var/lib/crowdstream/processed_ids.json",
+            "CROWDSTREAM_PROGRAMS_FILE": "/var/lib/crowdstream/programs.json",
+        }
+
+        with patch.dict(main.os.environ, environment, clear=True):
+            result = await main.main()
+
+        self.assertEqual(result, 0)
+        load_dotenv.assert_called_once_with()
+        run_bot.assert_awaited_once_with(
+            environment["DISCORD_WEBHOOK_URL"],
+            history_file=Path(environment["CROWDSTREAM_HISTORY_FILE"]),
+            programs_file=Path(environment["CROWDSTREAM_PROGRAMS_FILE"]),
+            programs_webhook_url=environment["DISCORD_PROGRAMS_WEBHOOK_URL"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

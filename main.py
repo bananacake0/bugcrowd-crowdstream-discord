@@ -918,6 +918,12 @@ async def main() -> int:
         return 1
     return await run_bot(
         webhook_url,
+        history_file=Path(
+            os.environ.get("CROWDSTREAM_HISTORY_FILE", str(HISTORY_FILE))
+        ),
+        programs_file=Path(
+            os.environ.get("CROWDSTREAM_PROGRAMS_FILE", str(PROGRAMS_FILE))
+        ),
         programs_webhook_url=os.environ.get("DISCORD_PROGRAMS_WEBHOOK_URL"),
     )
 
