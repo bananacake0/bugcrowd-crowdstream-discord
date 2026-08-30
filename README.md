@@ -104,9 +104,11 @@ uv run --locked main.py
 
 The first command may take several minutes because it fetches every CrowdStream page sequentially. Later commands fetch page 1 only and honor Bugcrowd rate limits.
 
-## GitHub Actions test run
+## GitHub Actions
 
-The `CrowdStream to Discord` workflow is manual-only. Add `DISCORD_WEBHOOK_URL` and optional `DISCORD_PROGRAMS_WEBHOOK_URL` as repository secrets, then use **Actions → CrowdStream to Discord → Run workflow**. The workflow runs the checks, executes `uv run --locked main.py`, and commits updated `processed_ids.json`, `programs.json`, and `scan_state.json` back to the default branch.
+The `CrowdStream to Discord` workflow runs every three hours, anchored at 4:17 PM East Africa Time. Daily runs occur at 1:17 AM, 4:17 AM, 7:17 AM, 10:17 AM, 1:17 PM, 4:17 PM, 7:17 PM, and 10:17 PM EAT. It can also be started manually with **Actions → CrowdStream to Discord → Run workflow**.
+
+Add `DISCORD_WEBHOOK_URL` and optional `DISCORD_PROGRAMS_WEBHOOK_URL` as repository secrets. The workflow runs the checks, validates the persisted state, executes `uv run --locked main.py`, and commits updated `processed_ids.json`, `programs.json`, and `scan_state.json` back to the default branch.
 
 ## Development checks
 

@@ -1,6 +1,9 @@
 name: CrowdStream to Discord
 
 on:
+  schedule:
+    # Every three hours, anchored at 16:17 East Africa Time (UTC+3).
+    - cron: "17 1,4,7,10,13,16,19,22 * * *"
   workflow_dispatch:
 
 permissions:
@@ -38,6 +41,14 @@ jobs:
           uv run --locked ruff check .
           uv run --locked ruff format --check .
           uv run --locked -m unittest discover -s tests -v
+
+      - name: Validate persisted state
+        run: |
+          if jq -e '.full_scan_complete == true' scan_state.json >/dev/null \
+            && [ "$(jq 'length' processed_ids.json)" -eq 0 ]; then
+            echo "::error::Full scan is marked complete, but processed_ids.json is empty."
+            exit 1
+          fi
 
       - name: Run CrowdStream bot
         id: bot
