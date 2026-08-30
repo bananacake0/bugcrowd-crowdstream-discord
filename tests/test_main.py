@@ -216,6 +216,13 @@ class HistoryTests(unittest.TestCase):
 
 
 class ProgramsTests(unittest.TestCase):
+    def test_empty_program_list_is_a_valid_bootstrap_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            programs_file = Path(directory) / "programs.json"
+            programs_file.write_text("[]\n", encoding="utf-8")
+
+            self.assertEqual(main.load_programs(programs_file), [])
+
     def test_loads_valid_programs(self):
         with tempfile.TemporaryDirectory() as directory:
             programs_file = Path(directory) / "programs.json"

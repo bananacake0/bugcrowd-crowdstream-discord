@@ -178,10 +178,8 @@ def load_programs(programs_file: Path = PROGRAMS_FILE) -> list[dict[str, Any]]:
             f"Programs file {programs_file} contains invalid JSON"
         ) from exc
 
-    if not isinstance(data, list) or not data:
-        raise ProgramsError(
-            f"Programs file {programs_file} must contain a non-empty list"
-        )
+    if not isinstance(data, list):
+        raise ProgramsError(f"Programs file {programs_file} must contain a list")
 
     programs: list[dict[str, Any]] = []
     seen_slugs: set[str] = set()

@@ -64,7 +64,8 @@ sudo systemctl start crowdstream.service
 ```
 
 Use `sudo systemctl start crowdstream.service` for each later scan and follow its
-output with `journalctl -u crowdstream.service -f`. Because the repository
-intentionally has no `processed_ids.json`, the first run treats all currently
-visible reports as new and sends the full backfill. Later manual runs persist IDs
-in `/var/lib` and send only reports not already recorded.
+output with `journalctl -u crowdstream.service -f`. Both repository state files
+begin as valid empty JSON arrays. The first run repopulates the paid-program
+catalog, treats all currently visible reports as new, and sends the full
+backfill. Later manual runs persist IDs in `/var/lib` and send only reports not
+already recorded.
