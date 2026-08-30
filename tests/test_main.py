@@ -90,6 +90,7 @@ class DateAndEmbedTests(unittest.TestCase):
                 "accepted_at": "28 Aug 2026",
                 "submission_state_date_text": "Accepted on 28 Aug 2026",
                 "created_at": "2026-08-20T12:00:00Z",
+                "amount": "$500",
                 "priority": 3,
                 "researcher_username": "researcher",
                 "researcher_profile_path": "/researchers/researcher",
@@ -105,9 +106,10 @@ class DateAndEmbedTests(unittest.TestCase):
         )
         self.assertEqual(
             [field["name"] for field in embed["fields"]],
-            ["Researcher", "Engagement", "Priority", "\u200b"],
+            ["Researcher", "Engagement", "Reward", "Priority", "\u200b"],
         )
-        self.assertEqual(embed["fields"][2]["value"], "`P3`")
+        self.assertEqual(embed["fields"][2]["value"], "$500")
+        self.assertEqual(embed["fields"][3]["value"], "`P3`")
         self.assertEqual(
             embed["fields"][-1],
             {
@@ -140,6 +142,7 @@ class DateAndEmbedTests(unittest.TestCase):
         self.assertEqual(
             embed["thumbnail"], {"url": "https://example.com/program-logo.png"}
         )
+        self.assertNotIn("Reward", {field["name"] for field in embed["fields"]})
 
     def test_external_bugcrowd_path_is_rejected(self):
         self.assertEqual(

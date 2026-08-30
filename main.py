@@ -316,13 +316,24 @@ def build_discord_embed(item: Mapping[str, Any]) -> dict[str, Any]:
             }
         )
 
+    fields.append(
+        {
+            "name": "Engagement",
+            "value": f"[{engagement_name}]({program_url})",
+            "inline": False,
+        }
+    )
+    amount = item.get("amount")
+    if amount is not None and str(amount):
+        fields.append(
+            {
+                "name": "Reward",
+                "value": str(amount),
+                "inline": False,
+            }
+        )
     fields.extend(
         [
-            {
-                "name": "Engagement",
-                "value": f"[{engagement_name}]({program_url})",
-                "inline": False,
-            },
             {"name": "Priority", "value": priority_value, "inline": False},
             {
                 "name": "\u200b",
