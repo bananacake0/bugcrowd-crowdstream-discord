@@ -26,6 +26,3 @@ ProtectSystem=strict
 ReadWritePaths=/var/lib/bugcrowd-crowdstream-discord
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 RestrictSUIDSGID=true
-
-[Install]
-WantedBy=multi-user.target
