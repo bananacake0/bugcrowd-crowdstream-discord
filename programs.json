@@ -1005,6 +1005,11 @@
     "crowdstream_enabled": true
   },
   {
+    "slug": "requirement-yogi",
+    "name": "Requirement Yogi (Bug bounty)",
+    "crowdstream_enabled": true
+  },
+  {
     "slug": "resolutionde",
     "name": "Resolution",
     "crowdstream_enabled": true
