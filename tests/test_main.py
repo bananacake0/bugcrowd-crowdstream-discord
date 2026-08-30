@@ -285,6 +285,33 @@ class ProgramsTests(unittest.TestCase):
                     with self.assertRaises(main.ProgramsError):
                         main.load_programs(programs_file)
 
+    def test_save_programs_is_sorted_and_atomic(self):
+        programs = [
+            {"slug": "zebra", "name": "Zebra", "crowdstream_enabled": False},
+            {"slug": "alpha", "name": "Alpha", "crowdstream_enabled": True},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            programs_file = Path(directory) / "programs.json"
+
+            main.save_programs(programs, programs_file)
+
+            self.assertEqual(
+                [program["slug"] for program in main.load_programs(programs_file)],
+                ["alpha", "zebra"],
+            )
+            self.assertEqual(list(programs_file.parent.glob("*.tmp")), [])
+
+    def test_catalog_slug_preserves_case_required_by_bugcrowd(self):
+        self.assertEqual(
+            main.paid_program_from_catalog(
+                {
+                    "name": "CoinDesk Data",
+                    "briefUrl": "/engagements/CCData-mbb-og",
+                }
+            ),
+            {"slug": "CCData-mbb-og", "name": "CoinDesk Data"},
+        )
+
 
 class SelectionTests(unittest.TestCase):
     def test_selection_skips_processed_invalid_and_duplicate_ids(self):
@@ -300,11 +327,13 @@ class SelectionTests(unittest.TestCase):
 
 
 class NetworkTests(unittest.IsolatedAsyncioTestCase):
-    async def test_fetch_validates_http_status(self):
-        session = FakeSession([FakeResponse(503)])
+    @patch("main.asyncio.sleep", new_callable=AsyncMock)
+    async def test_fetch_validates_http_status(self, sleep):
+        session = FakeSession([FakeResponse(503) for _ in range(5)])
 
         with self.assertRaises(main.CrowdstreamError):
             await main.fetch_crowdstream_page(session, "atlassian", page=1)
+        self.assertEqual(sleep.await_count, 4)
 
     async def test_fetch_accepts_expected_response(self):
         payload = {"results": [{"id": "one"}]}
@@ -326,12 +355,20 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         )
 
     @patch("main.fetch_crowdstream_page", new_callable=AsyncMock)
-    async def test_fetches_program_pages_then_globally_sorts_oldest_first(
+    async def test_fetches_all_program_pages_then_globally_sorts_oldest_first(
         self, fetch_page
     ):
         fetch_page.side_effect = [
+            {
+                "results": [{"id": "atlassian-new", "accepted_at": "30 Aug 2026"}],
+                "pagination_meta": {"total_pages": 2},
+            },
             {"results": [{"id": "atlassian-older", "accepted_at": "10 Aug 2026"}]},
-            {"results": [{"id": "atlassian-new", "accepted_at": "30 Aug 2026"}]},
+            None,
+            {
+                "results": [{"id": "rapyd-newest", "accepted_at": "31 Aug 2026"}],
+                "pagination_meta": {"total_pages": 3},
+            },
             {"results": [{"id": "rapyd-oldest", "accepted_at": "5 Aug 2026"}]},
             {"results": [{"id": "rapyd-middle", "accepted_at": "20 Aug 2026"}]},
         ]
@@ -354,12 +391,25 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(
             [call.args[1] for call in fetch_page.await_args_list],
-            ["atlassian", "atlassian", "rapyd", "rapyd"],
+            [
+                "atlassian",
+                "atlassian",
+                "launchdarkly",
+                "rapyd",
+                "rapyd",
+                "rapyd",
+            ],
         )
         self.assertEqual(
             [call.kwargs["page"] for call in fetch_page.await_args_list],
-            [2, 1, 2, 1],
+            [1, 2, 1, 1, 3, 2],
         )
+        self.assertTrue(fetch_page.await_args_list[0].kwargs["allow_not_found"])
+        self.assertTrue(fetch_page.await_args_list[2].kwargs["allow_not_found"])
+        self.assertTrue(fetch_page.await_args_list[3].kwargs["allow_not_found"])
+        self.assertTrue(programs[0]["crowdstream_enabled"])
+        self.assertFalse(programs[1]["crowdstream_enabled"])
+        self.assertTrue(programs[2]["crowdstream_enabled"])
         self.assertEqual(
             [item["id"] for item in new_items],
             [
@@ -367,8 +417,90 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
                 "atlassian-older",
                 "rapyd-middle",
                 "atlassian-new",
+                "rapyd-newest",
             ],
         )
+
+    @patch("main.asyncio.sleep", new_callable=AsyncMock)
+    async def test_bugcrowd_retries_rate_limit_then_succeeds(self, sleep):
+        payload = {"results": [], "pagination_meta": {"total_pages": 0}}
+        session = FakeSession(
+            [
+                FakeResponse(429, headers={"Retry-After": "0.25"}),
+                FakeResponse(200, payload=payload),
+            ]
+        )
+
+        result = await main.fetch_crowdstream_page(session, "atlassian")
+
+        self.assertEqual(result, payload)
+        sleep.assert_awaited_once_with(0.25)
+
+    async def test_fetches_every_paid_catalog_page_and_deduplicates_slug(self):
+        session = FakeSession(
+            [
+                FakeResponse(
+                    200,
+                    payload={
+                        "engagements": [
+                            {"name": "Alpha", "briefUrl": "/engagements/alpha"},
+                            {"name": "Beta", "briefUrl": "/engagements/beta"},
+                        ],
+                        "paginationMeta": {"limit": 2, "totalCount": 4},
+                    },
+                ),
+                FakeResponse(
+                    200,
+                    payload={
+                        "engagements": [
+                            {"name": "Gamma", "briefUrl": "/engagements/gamma"},
+                            {"name": "Beta", "briefUrl": "/engagements/beta"},
+                        ]
+                    },
+                ),
+            ]
+        )
+
+        programs = await main.fetch_paid_programs(session)
+
+        self.assertEqual(
+            programs,
+            [
+                {"slug": "alpha", "name": "Alpha"},
+                {"slug": "beta", "name": "Beta"},
+                {"slug": "gamma", "name": "Gamma"},
+            ],
+        )
+        self.assertEqual([call[2]["params"]["page"] for call in session.calls], [1, 2])
+
+    @patch("main.fetch_paid_programs", new_callable=AsyncMock)
+    async def test_refresh_programs_preserves_known_state_and_marks_new_unknown(
+        self, fetch_paid_programs
+    ):
+        fetch_paid_programs.return_value = [
+            {"slug": "existing", "name": "Renamed Existing"},
+            {"slug": "new", "name": "New"},
+        ]
+        previous = [
+            {"slug": "existing", "name": "Existing", "crowdstream_enabled": True},
+            {"slug": "removed", "name": "Removed", "crowdstream_enabled": False},
+        ]
+
+        refreshed, added, removed = await main.refresh_programs(object(), previous)
+
+        self.assertEqual(
+            refreshed,
+            [
+                {
+                    "slug": "existing",
+                    "name": "Renamed Existing",
+                    "crowdstream_enabled": True,
+                },
+                {"slug": "new", "name": "New", "crowdstream_enabled": False},
+            ],
+        )
+        self.assertEqual(added, [refreshed[1]])
+        self.assertEqual(removed, [previous[1]])
 
     @patch("main.asyncio.sleep", new_callable=AsyncMock)
     async def test_discord_prefers_json_retry_after_then_succeeds(self, sleep):
@@ -423,6 +555,39 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
                 session, "https://discord.com/webhook", [{"id": "one"}]
             )
         self.assertEqual(len(session.calls), 1)
+
+    @patch("main.asyncio.sleep", new_callable=AsyncMock)
+    @patch("main.send_discord_payload", new_callable=AsyncMock)
+    async def test_program_changes_are_batched_for_their_webhook(self, send, sleep):
+        send.return_value = 0.0
+        added = [
+            {
+                "slug": f"added-{index}",
+                "name": f"Added {index}",
+                "crowdstream_enabled": True,
+            }
+            for index in range(11)
+        ]
+        removed = [
+            {
+                "slug": "removed",
+                "name": "Removed",
+                "crowdstream_enabled": False,
+            }
+        ]
+
+        await main.deliver_program_changes(
+            object(), "https://discord.com/program-webhook", added, removed
+        )
+
+        self.assertEqual(
+            [len(call.args[2]["embeds"]) for call in send.await_args_list], [10, 2]
+        )
+        self.assertEqual(
+            send.await_args_list[-1].args[2]["embeds"][-1]["title"],
+            "Paid program removed",
+        )
+        sleep.assert_awaited_once_with(3.0)
 
     def test_delivery_batches_use_at_most_ten_embeds(self):
         items = [{"id": str(index)} for index in range(23)]
