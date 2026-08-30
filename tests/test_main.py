@@ -109,7 +109,7 @@ class DateAndEmbedTests(unittest.TestCase):
             ["Researcher", "Engagement", "Reward", "Priority", "\u200b"],
         )
         self.assertEqual(embed["fields"][2]["value"], "$500")
-        self.assertEqual(embed["fields"][3]["value"], "`P3`")
+        self.assertEqual(embed["fields"][3]["value"], main.EMOJI_BY_PRIORITY[3])
         self.assertEqual(
             embed["fields"][-1],
             {
@@ -127,9 +127,20 @@ class DateAndEmbedTests(unittest.TestCase):
                     field for field in embed["fields"] if field["name"] == "Priority"
                 )
 
-                self.assertEqual(priority_field["value"], f"`P{priority}`")
+                self.assertEqual(
+                    priority_field["value"], main.EMOJI_BY_PRIORITY[priority]
+                )
                 self.assertEqual(embed["color"], main.COLOR_BY_PRIORITY[priority])
                 self.assertNotIn("thumbnail", embed)
+
+    def test_priority_falls_back_to_text_badge_without_an_emoji(self):
+        with patch.dict(main.EMOJI_BY_PRIORITY, {}, clear=True):
+            embed = main.build_discord_embed({"priority": 4})
+
+        priority_field = next(
+            field for field in embed["fields"] if field["name"] == "Priority"
+        )
+        self.assertEqual(priority_field["value"], "`P4`")
 
     def test_program_logo_remains_thumbnail_for_high_priority(self):
         embed = main.build_discord_embed(

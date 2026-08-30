@@ -38,6 +38,13 @@ COLOR_BY_PRIORITY = {
     4: 3066993,
     5: 3447003,
 }
+EMOJI_BY_PRIORITY = {
+    1: "<:P1:1543182449020899432>",
+    2: "<:P2:1543182969785815050>",
+    3: "<:P3:1543182868556030022>",
+    4: "<:P4:1543182790781046784>",
+    5: "<:P5:1543182705024438313>",
+}
 DEFAULT_EMBED_COLOR = 14586392
 
 
@@ -619,7 +626,9 @@ def build_discord_embed(item: Mapping[str, Any]) -> dict[str, Any]:
         else None
     )
     priority_value = (
-        f"`P{priority_number}`" if priority_number in COLOR_BY_PRIORITY else "N/A"
+        EMOJI_BY_PRIORITY.get(priority_number, f"`P{priority_number}`")
+        if priority_number in COLOR_BY_PRIORITY
+        else "N/A"
     )
     embed: dict[str, Any] = {
         "color": COLOR_BY_PRIORITY.get(priority_number, DEFAULT_EMBED_COLOR),
