@@ -106,7 +106,7 @@ The first command may take several minutes because it fetches every CrowdStream 
 
 ## GitHub Actions
 
-The `CrowdStream to Discord` workflow runs every three hours, anchored at 12:17 AM East Africa Time. Daily runs occur at 12:17 AM, 3:17 AM, 6:17 AM, 9:17 AM, 12:17 PM, 3:17 PM, 6:17 PM, and 9:17 PM EAT. It can also be started manually with **Actions → CrowdStream to Discord → Run workflow**.
+The `CrowdStream to Discord` workflow runs every three hours, anchored at 12:36 AM East Africa Time. Daily runs occur at 12:36 AM, 3:36 AM, 6:36 AM, 9:36 AM, 12:36 PM, 3:36 PM, 6:36 PM, and 9:36 PM EAT. It can also be started manually with **Actions → CrowdStream to Discord → Run workflow**.
 
 Add `DISCORD_WEBHOOK_URL` and optional `DISCORD_PROGRAMS_WEBHOOK_URL` as repository secrets. The workflow runs the checks, validates the persisted state, executes `uv run --locked main.py`, and commits updated `processed_ids.json`, `programs.json`, and `scan_state.json` back to the default branch.
 

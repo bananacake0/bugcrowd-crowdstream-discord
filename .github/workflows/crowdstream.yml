@@ -2,8 +2,8 @@ name: CrowdStream to Discord
 
 on:
   schedule:
-    # Every three hours, anchored at 00:17 East Africa Time (UTC+3).
-    - cron: "17 0,3,6,9,12,15,18,21 * * *"
+    # Every three hours, anchored at 00:36 East Africa Time (UTC+3).
+    - cron: "36 0,3,6,9,12,15,18,21 * * *"
   workflow_dispatch:
 
 permissions:
