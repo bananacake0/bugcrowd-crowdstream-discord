@@ -1,6 +1,6 @@
 # Bugcrowd CrowdStream Discord bot
 
-Fetches public CrowdStream reports from every paid Bugcrowd bug-bounty program and posts them to Discord. The project currently runs manually: there is no GitHub Actions workflow, cron job, or enabled `systemd` timer.
+Fetches public CrowdStream reports from every paid Bugcrowd bug-bounty program and posts them to Discord. Runs can be started manually from GitHub Actions.
 
 ## Current behavior
 
@@ -104,54 +104,9 @@ uv run --locked main.py
 
 The first command may take several minutes because it fetches every CrowdStream page sequentially. Later commands fetch page 1 only and honor Bugcrowd rate limits.
 
-## Manual VPS deployment
+## GitHub Actions test run
 
-The included `systemd` service is a hardened one-shot service. It runs only when manually started and cannot be enabled as a scheduled service in its current form.
-
-The following example assumes Debian or Ubuntu, `uv` installed at `/usr/local/bin/uv`, and the repository URL stored in `REPOSITORY_URL`:
-
-```bash
-sudo useradd --system --create-home --shell /usr/sbin/nologin crowdstream
-sudo install -d -o crowdstream -g crowdstream /opt/bugcrowd-crowdstream-discord
-sudo -u crowdstream git clone "$REPOSITORY_URL" /opt/bugcrowd-crowdstream-discord
-cd /opt/bugcrowd-crowdstream-discord
-sudo -u crowdstream /usr/local/bin/uv sync --locked --no-dev
-
-sudo install -d -m 700 -o crowdstream -g crowdstream \
-  /var/lib/bugcrowd-crowdstream-discord
-sudo install -m 600 -o crowdstream -g crowdstream \
-  programs.json processed_ids.json scan_state.json /var/lib/bugcrowd-crowdstream-discord/
-sudo install -m 640 -o root -g crowdstream /dev/null \
-  /etc/bugcrowd-crowdstream-discord.env
-sudoedit /etc/bugcrowd-crowdstream-discord.env
-```
-
-Add the following configuration to `/etc/bugcrowd-crowdstream-discord.env`:
-
-```dotenv
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/replace-with-your-webhook
-DISCORD_PROGRAMS_WEBHOOK_URL=https://discord.com/api/webhooks/replace-with-your-program-changes-webhook
-CROWDSTREAM_HISTORY_FILE=/var/lib/bugcrowd-crowdstream-discord/processed_ids.json
-CROWDSTREAM_PROGRAMS_FILE=/var/lib/bugcrowd-crowdstream-discord/programs.json
-CROWDSTREAM_SCAN_STATE_FILE=/var/lib/bugcrowd-crowdstream-discord/scan_state.json
-```
-
-Install the manual service:
-
-```bash
-sudo install -m 644 deploy/systemd/crowdstream.service \
-  /etc/systemd/system/crowdstream.service
-sudo systemctl daemon-reload
-```
-
-Start a scan and follow its logs:
-
-```bash
-sudo systemctl start --no-block crowdstream.service
-sudo journalctl -fu crowdstream.service
-```
-
-Run `sudo systemctl start crowdstream.service` whenever another scan is needed. The state under `/var/lib/bugcrowd-crowdstream-discord` survives Git updates and prevents duplicate report delivery.
+The `CrowdStream to Discord` workflow is manual-only. Add `DISCORD_WEBHOOK_URL` and optional `DISCORD_PROGRAMS_WEBHOOK_URL` as repository secrets, then use **Actions → CrowdStream to Discord → Run workflow**. The workflow runs the checks, executes `uv run --locked main.py`, and commits updated `processed_ids.json`, `programs.json`, and `scan_state.json` back to the default branch.
 
 ## Development checks
 
