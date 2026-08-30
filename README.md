@@ -1,10 +1,14 @@
 # Bugcrowd CrowdStream Discord bot
 
-Posts new Bugcrowd CrowdStream acceptances and disclosures to Discord. The first
-complete run backfills every available CrowdStream page from oldest to newest;
-later runs check pages 5 through 1 and skip IDs already recorded in
-`processed_ids.json`. Discord deliveries are grouped into batches of up to ten
-reports with a three-second pause between batches.
+Posts new Bugcrowd CrowdStream acceptances and disclosures to Discord. This
+proof monitors page 1 of the engagement-specific CrowdStreams enabled in
+`programs.json`: Atlassian, Nubank, and Rapyd. LaunchDarkly is recorded but
+disabled because its CrowdStream endpoint returns HTTP 404. Results from each
+page are delivered oldest-to-newest, and IDs already recorded in
+`processed_ids.json` are skipped. Discord deliveries are grouped into batches
+of up to ten reports with a three-second pause between batches. P1 and P2
+reports use attached severity thumbnails; lower priorities retain the program
+logo supplied by Bugcrowd.
 
 ## Local run
 
@@ -24,10 +28,10 @@ from the Actions tab.
    Discord webhook URL.
 4. Open **Actions → CrowdStream to Discord → Run workflow** for the first run.
 
-The workflow commits `processed_ids.json` and `.backfill_complete` to the default
-branch after deliveries. This state is required because GitHub-hosted runners are
-temporary. The workflow grants only `contents: write`, prevents overlapping runs,
-and persists successful batches even if a later batch fails.
+The workflow commits `processed_ids.json` to the default branch after
+deliveries. This state is required because GitHub-hosted runners are temporary.
+The workflow grants only `contents: write`, prevents overlapping runs, and
+persists successful batches even if a later batch fails.
 
 If the state commit is rejected, allow GitHub Actions to write repository
 contents under **Settings → Actions → General → Workflow permissions** and make

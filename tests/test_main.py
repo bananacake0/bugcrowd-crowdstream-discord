@@ -102,7 +102,49 @@ class DateAndEmbedTests(unittest.TestCase):
 
                 self.assertEqual(priority_field["value"], f"**P{priority}**")
                 self.assertEqual(embed["color"], main.COLOR_BY_PRIORITY[priority])
-                self.assertNotIn("thumbnail", embed)
+                if priority in main.PRIORITY_THUMBNAILS:
+                    self.assertEqual(
+                        embed["thumbnail"],
+                        {
+                            "url": "attachment://"
+                            f"{main.PRIORITY_THUMBNAILS[priority].name}"
+                        },
+                    )
+                else:
+                    self.assertNotIn("thumbnail", embed)
+
+    def test_priority_message_includes_each_thumbnail_once(self):
+        payload, attachment_files = main.build_discord_message(
+            [
+                {"id": "p1-first", "priority": 1},
+                {"id": "p1-second", "priority": 1},
+                {"id": "p2", "priority": 2},
+                {"id": "p3", "priority": 3},
+            ]
+        )
+
+        self.assertEqual(
+            payload["attachments"],
+            [
+                {
+                    "id": 0,
+                    "filename": "priority-p1.png",
+                    "description": "P1 priority badge",
+                },
+                {
+                    "id": 1,
+                    "filename": "priority-p2.png",
+                    "description": "P2 priority badge",
+                },
+            ],
+        )
+        self.assertEqual(
+            [filename for filename, _ in attachment_files],
+            ["priority-p1.png", "priority-p2.png"],
+        )
+        self.assertTrue(
+            all(content.startswith(b"\x89PNG") for _, content in attachment_files)
+        )
 
     def test_external_bugcrowd_path_is_rejected(self):
         self.assertEqual(
@@ -157,13 +199,76 @@ class HistoryTests(unittest.TestCase):
             with self.assertRaises(main.HistoryError):
                 main.load_processed_ids(history_file)
 
-    def test_backfill_completion_marker_is_created(self):
+
+class ProgramsTests(unittest.TestCase):
+    def test_loads_valid_programs(self):
         with tempfile.TemporaryDirectory() as directory:
-            marker_file = Path(directory) / ".backfill_complete"
+            programs_file = Path(directory) / "programs.json"
+            programs_file.write_text(
+                json.dumps(
+                    [
+                        {
+                            "slug": "atlassian",
+                            "name": "Atlassian",
+                            "crowdstream_enabled": True,
+                        },
+                        {
+                            "slug": "launchdarkly-mbb-og",
+                            "name": "LaunchDarkly",
+                            "crowdstream_enabled": False,
+                        },
+                    ]
+                ),
+                encoding="utf-8",
+            )
 
-            main.mark_backfill_complete(marker_file)
+            self.assertEqual(
+                main.load_programs(programs_file),
+                [
+                    {
+                        "slug": "atlassian",
+                        "name": "Atlassian",
+                        "crowdstream_enabled": True,
+                    },
+                    {
+                        "slug": "launchdarkly-mbb-og",
+                        "name": "LaunchDarkly",
+                        "crowdstream_enabled": False,
+                    },
+                ],
+            )
 
-            self.assertTrue(marker_file.is_file())
+    def test_rejects_duplicate_or_unsafe_program_slugs(self):
+        invalid_program_lists = [
+            [
+                {
+                    "slug": "duplicate",
+                    "name": "First",
+                    "crowdstream_enabled": True,
+                },
+                {
+                    "slug": "duplicate",
+                    "name": "Second",
+                    "crowdstream_enabled": True,
+                },
+            ],
+            [
+                {
+                    "slug": "../unsafe",
+                    "name": "Unsafe",
+                    "crowdstream_enabled": True,
+                }
+            ],
+        ]
+
+        for programs in invalid_program_lists:
+            with self.subTest(programs=programs):
+                with tempfile.TemporaryDirectory() as directory:
+                    programs_file = Path(directory) / "programs.json"
+                    programs_file.write_text(json.dumps(programs), encoding="utf-8")
+
+                    with self.assertRaises(main.ProgramsError):
+                        main.load_programs(programs_file)
 
 
 class SelectionTests(unittest.TestCase):
@@ -184,81 +289,68 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         session = FakeSession([FakeResponse(503)])
 
         with self.assertRaises(main.CrowdstreamError):
-            await main.fetch_crowdstream_page(session, page=1)
+            await main.fetch_crowdstream_page(session, "atlassian", page=1)
 
     async def test_fetch_accepts_expected_response(self):
         payload = {"results": [{"id": "one"}]}
         session = FakeSession([FakeResponse(200, payload=payload)])
 
-        self.assertEqual(await main.fetch_crowdstream_page(session, page=1), payload)
-
-    @patch("main.fetch_crowdstream_page", new_callable=AsyncMock)
-    async def test_fetches_recent_pages_descending_and_orders_each_oldest_first(
-        self, fetch_page
-    ):
-        fetch_page.side_effect = [
-            {"results": [{"id": f"page-{page}-new"}, {"id": f"page-{page}-old"}]}
-            for page in range(5, 0, -1)
-        ]
-        session = object()
-
-        new_items = await main.fetch_new_items(session, set())
-
         self.assertEqual(
-            [call.kwargs["page"] for call in fetch_page.await_args_list],
-            [5, 4, 3, 2, 1],
+            await main.fetch_crowdstream_page(session, "atlassian", page=1),
+            payload,
         )
         self.assertEqual(
-            [item["id"] for item in new_items],
+            session.calls,
             [
-                item_id
-                for page in range(5, 0, -1)
-                for item_id in (f"page-{page}-old", f"page-{page}-new")
+                (
+                    "GET",
+                    "https://bugcrowd.com/engagements/atlassian/crowdstream.json",
+                    {"headers": {"User-Agent": main.USER_AGENT}, "params": {"page": 1}},
+                )
             ],
         )
 
     @patch("main.fetch_crowdstream_page", new_callable=AsyncMock)
-    async def test_full_backfill_discovers_last_page_and_orders_it_first(
+    async def test_fetches_enabled_program_page_and_orders_each_oldest_first(
         self, fetch_page
     ):
         fetch_page.side_effect = [
+            {"results": [{"id": "atlassian-new"}, {"id": "atlassian-old"}]},
+            {"results": [{"id": "rapyd-new"}, {"id": "rapyd-old"}]},
+        ]
+        session = object()
+        programs = [
             {
-                "pagination_meta": {"total_pages": 3},
-                "results": [{"id": "page-1-new"}, {"id": "page-1-old"}],
+                "slug": "atlassian",
+                "name": "Atlassian",
+                "crowdstream_enabled": True,
             },
-            {"results": [{"id": "page-3-new"}, {"id": "page-3-old"}]},
-            {"results": [{"id": "page-2-new"}, {"id": "page-2-old"}]},
+            {
+                "slug": "launchdarkly",
+                "name": "LaunchDarkly",
+                "crowdstream_enabled": False,
+            },
+            {"slug": "rapyd", "name": "Rapyd", "crowdstream_enabled": True},
         ]
-        session = object()
 
-        new_items = await main.fetch_new_items(
-            session,
-            set(),
-            full_backfill=True,
-        )
+        new_items = await main.fetch_new_items(session, set(), programs)
 
         self.assertEqual(
-            [call.kwargs["page"] for call in fetch_page.await_args_list],
-            [1, 3, 2],
+            [call.args[1] for call in fetch_page.await_args_list],
+            ["atlassian", "rapyd"],
+        )
+        self.assertEqual(
+            [call.kwargs["page"] for call in fetch_page.await_args_list], [1, 1]
         )
         self.assertEqual(
             [item["id"] for item in new_items],
             [
-                "page-3-old",
-                "page-3-new",
-                "page-2-old",
-                "page-2-new",
-                "page-1-old",
-                "page-1-new",
+                "atlassian-old",
+                "atlassian-new",
+                "rapyd-old",
+                "rapyd-new",
             ],
         )
-
-    @patch("main.fetch_crowdstream_page", new_callable=AsyncMock)
-    async def test_full_backfill_requires_valid_pagination_metadata(self, fetch_page):
-        fetch_page.return_value = {"results": []}
-
-        with self.assertRaises(main.CrowdstreamError):
-            await main.fetch_new_items(object(), set(), full_backfill=True)
 
     @patch("main.asyncio.sleep", new_callable=AsyncMock)
     async def test_discord_prefers_json_retry_after_then_succeeds(self, sleep):
@@ -304,6 +396,19 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertEqual(cooldown, 1.25)
+
+    async def test_discord_sends_priority_thumbnail_as_multipart(self):
+        session = FakeSession([FakeResponse(204)])
+
+        await main.send_to_discord(
+            session,
+            "https://discord.com/webhook",
+            [{"id": "critical", "priority": 1}],
+        )
+
+        post_arguments = session.calls[0][2]
+        self.assertIn("data", post_arguments)
+        self.assertNotIn("json", post_arguments)
 
     async def test_discord_does_not_retry_permanent_client_error(self):
         session = FakeSession([FakeResponse(400)])

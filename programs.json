@@ -1,0 +1,22 @@
+[
+  {
+    "slug": "atlassian",
+    "name": "Atlassian",
+    "crowdstream_enabled": true
+  },
+  {
+    "slug": "launchdarkly-mbb-og",
+    "name": "LaunchDarkly Managed Bug Bounty Engagement",
+    "crowdstream_enabled": false
+  },
+  {
+    "slug": "nubank",
+    "name": "Nubank Brasil Managed Bug Bounty Program",
+    "crowdstream_enabled": true
+  },
+  {
+    "slug": "rapyd",
+    "name": "Rapyd",
+    "crowdstream_enabled": true
+  }
+]

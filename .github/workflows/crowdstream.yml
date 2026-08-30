@@ -55,9 +55,6 @@ jobs:
           TARGET_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           git add -A -- processed_ids.json
-          if [ -f .backfill_complete ]; then
-            git add -- .backfill_complete
-          fi
 
           if git diff --cached --quiet; then
             echo "Delivery state is unchanged."
