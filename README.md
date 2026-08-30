@@ -2,13 +2,13 @@
 
 Posts new Bugcrowd CrowdStream acceptances and disclosures to Discord. This
 proof monitors pages 2 and 1 of the engagement-specific CrowdStreams enabled in
-`programs.json`: Atlassian, Nubank, and Rapyd. LaunchDarkly is recorded but
-disabled because its CrowdStream endpoint returns HTTP 404. Results from every
-program are merged and sorted together by acceptance or disclosure date before
-delivery, and IDs already recorded in `processed_ids.json` are skipped. Discord
-deliveries are grouped into batches of up to ten reports with a three-second
-pause between batches. Embeds retain the program logo and use a compact priority
-badge matching the reference layout.
+`programs.json`: Atlassian, Nubank, OpenAI, Rapyd, and Tesla. LaunchDarkly is
+recorded but disabled because its CrowdStream endpoint returns HTTP 404. Results
+from every program are merged and sorted together by acceptance or disclosure
+date before delivery, and IDs already recorded in `processed_ids.json` are
+skipped. Discord deliveries are grouped into batches of up to ten reports with
+a three-second pause between batches. Embeds retain the program logo and use a
+compact priority badge matching the reference layout.
 
 ## Local run
 

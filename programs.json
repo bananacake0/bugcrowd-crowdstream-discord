@@ -15,8 +15,18 @@
     "crowdstream_enabled": true
   },
   {
+    "slug": "openai",
+    "name": "OpenAI",
+    "crowdstream_enabled": true
+  },
+  {
     "slug": "rapyd",
     "name": "Rapyd",
+    "crowdstream_enabled": true
+  },
+  {
+    "slug": "tesla",
+    "name": "Tesla",
     "crowdstream_enabled": true
   }
 ]
