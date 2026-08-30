@@ -4,7 +4,7 @@ import os
 import re
 import tempfile
 from collections.abc import Mapping, Sequence
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin, urlparse
@@ -16,6 +16,7 @@ BUGCROWD_ORIGIN = "https://bugcrowd.com"
 HISTORY_FILE = Path("processed_ids.json")
 PROGRAMS_FILE = Path("programs.json")
 PROGRAM_SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+PAGE_NUMBERS_DESCENDING = (2, 1)
 REQUEST_TIMEOUT_SECONDS = 30
 DISCORD_MAX_ATTEMPTS = 3
 DISCORD_RETRY_BASE_SECONDS = 1.0
@@ -34,10 +35,6 @@ COLOR_BY_PRIORITY = {
     5: 3447003,
 }
 DEFAULT_EMBED_COLOR = 14586392
-PRIORITY_THUMBNAILS = {
-    1: Path(__file__).resolve().parent / "assets" / "priority-p1.png",
-    2: Path(__file__).resolve().parent / "assets" / "priority-p2.png",
-}
 
 
 class HistoryError(RuntimeError):
@@ -66,6 +63,19 @@ def format_iso_date(date_str: str | None) -> str:
     except ValueError:
         return date_str
     return parsed.strftime("%d %b %Y")
+
+
+def parse_crowdstream_date(date_str: str) -> date | None:
+    normalized = f"{date_str[:-1]}+00:00" if date_str.endswith("Z") else date_str
+    try:
+        return datetime.fromisoformat(normalized).date()
+    except ValueError:
+        pass
+
+    try:
+        return datetime.strptime(date_str, "%d %b %Y").date()
+    except ValueError:
+        return None
 
 
 def text_value(value: Any, default: str = "") -> str:
@@ -200,6 +210,31 @@ def bugcrowd_url(path: str | None) -> str:
     return BUGCROWD_ORIGIN
 
 
+def crowdstream_event(item: Mapping[str, Any]) -> tuple[str, str]:
+    raw_state_date_text = text_value(item.get("submission_state_date_text"), "Recently")
+    if item.get("disclosed") is True:
+        return (
+            "Disclosed on",
+            text_value(
+                item.get("disclosed_at"),
+                raw_state_date_text.removeprefix("Disclosed on "),
+            ),
+        )
+    return (
+        "Accepted on",
+        text_value(
+            item.get("accepted_at"),
+            raw_state_date_text.removeprefix("Accepted on "),
+        ),
+    )
+
+
+def crowdstream_sort_key(item: Mapping[str, Any]) -> int:
+    _, event_date = crowdstream_event(item)
+    parsed = parse_crowdstream_date(event_date)
+    return parsed.toordinal() if parsed is not None else date.max.toordinal()
+
+
 async def fetch_crowdstream_page(
     session: aiohttp.ClientSession, program_slug: str, page: int = 1
 ) -> dict[str, Any]:
@@ -241,20 +276,7 @@ def build_discord_embed(item: Mapping[str, Any]) -> dict[str, Any]:
     program_url = bugcrowd_url(text_value(item.get("engagement_path")))
     is_disclosed = item.get("disclosed") is True
     state_text = text_value(item.get("submission_state_text"), "Submission accepted")
-
-    raw_state_date_text = text_value(item.get("submission_state_date_text"), "Recently")
-    if is_disclosed:
-        event_date_label = "Disclosed on"
-        event_date_value = text_value(
-            item.get("disclosed_at"),
-            raw_state_date_text.removeprefix("Disclosed on "),
-        )
-    else:
-        event_date_label = "Accepted on"
-        event_date_value = text_value(
-            item.get("accepted_at"),
-            raw_state_date_text.removeprefix("Accepted on "),
-        )
+    event_date_label, event_date_value = crowdstream_event(item)
 
     priority = item.get("priority")
     priority_number = (
@@ -263,7 +285,7 @@ def build_discord_embed(item: Mapping[str, Any]) -> dict[str, Any]:
         else None
     )
     priority_value = (
-        f"**P{priority_number}**" if priority_number in COLOR_BY_PRIORITY else "N/A"
+        f"`P{priority_number}`" if priority_number in COLOR_BY_PRIORITY else "N/A"
     )
     embed: dict[str, Any] = {
         "color": COLOR_BY_PRIORITY.get(priority_number, DEFAULT_EMBED_COLOR),
@@ -301,26 +323,17 @@ def build_discord_embed(item: Mapping[str, Any]) -> dict[str, Any]:
                 "value": f"[{engagement_name}]({program_url})",
                 "inline": False,
             },
-            {
-                "name": "Reward",
-                "value": str(item.get("amount") or "Unknown"),
-                "inline": False,
-            },
             {"name": "Priority", "value": priority_value, "inline": False},
             {
-                "name": event_date_label,
-                "value": str(event_date_value),
+                "name": "\u200b",
+                "value": f"{event_date_label} {event_date_value}",
                 "inline": False,
             },
         ]
     )
     embed["fields"] = fields
 
-    if priority_number in PRIORITY_THUMBNAILS:
-        embed["thumbnail"] = {
-            "url": f"attachment://{PRIORITY_THUMBNAILS[priority_number].name}"
-        }
-    elif logo_url := text_value(item.get("logo_url")):
+    if logo_url := text_value(item.get("logo_url")):
         embed["thumbnail"] = {"url": logo_url}
     return embed
 
@@ -398,52 +411,6 @@ def retry_delay_seconds(
     return DISCORD_RETRY_BASE_SECONDS * (2 ** (attempt - 1))
 
 
-def build_discord_message(
-    items: Sequence[Mapping[str, Any]],
-) -> tuple[dict[str, Any], list[tuple[str, bytes]]]:
-    payload: dict[str, Any] = {"embeds": [build_discord_embed(item) for item in items]}
-    attachment_files: list[tuple[str, bytes]] = []
-    priorities = {
-        priority
-        for item in items
-        if (
-            isinstance(priority := item.get("priority"), int)
-            and not isinstance(priority, bool)
-            and priority in PRIORITY_THUMBNAILS
-        )
-    }
-    for attachment_id, priority in enumerate(sorted(priorities)):
-        path = PRIORITY_THUMBNAILS[priority]
-        attachment_files.append((path.name, path.read_bytes()))
-        payload.setdefault("attachments", []).append(
-            {
-                "id": attachment_id,
-                "filename": path.name,
-                "description": f"P{priority} priority badge",
-            }
-        )
-    return payload, attachment_files
-
-
-def discord_post_data(
-    payload: Mapping[str, Any], attachment_files: Sequence[tuple[str, bytes]]
-) -> aiohttp.FormData:
-    form = aiohttp.FormData()
-    form.add_field(
-        "payload_json",
-        json.dumps(payload),
-        content_type="application/json",
-    )
-    for attachment_id, (filename, content) in enumerate(attachment_files):
-        form.add_field(
-            f"files[{attachment_id}]",
-            content,
-            filename=filename,
-            content_type="image/png",
-        )
-    return form
-
-
 def rate_limit_cooldown_seconds(headers: Mapping[str, str]) -> float:
     if headers.get("X-RateLimit-Remaining") != "0":
         return 0.0
@@ -485,20 +452,12 @@ async def send_to_discord(
     webhook_url: str,
     items: Sequence[Mapping[str, Any]],
 ) -> float:
-    try:
-        payload, attachment_files = build_discord_message(items)
-    except OSError as exc:
-        raise DiscordDeliveryError(f"Could not load priority thumbnail: {exc}") from exc
+    payload = {"embeds": [build_discord_embed(item) for item in items]}
     last_error = "unknown delivery error"
 
     for attempt in range(1, DISCORD_MAX_ATTEMPTS + 1):
         try:
-            post_arguments: dict[str, Any]
-            if attachment_files:
-                post_arguments = {"data": discord_post_data(payload, attachment_files)}
-            else:
-                post_arguments = {"json": payload}
-            async with session.post(webhook_url, **post_arguments) as response:
+            async with session.post(webhook_url, json=payload) as response:
                 if 200 <= response.status < 300:
                     return rate_limit_cooldown_seconds(response.headers)
 
@@ -547,16 +506,20 @@ async def fetch_new_items(
     session: aiohttp.ClientSession,
     processed_ids: set[str],
     programs: Sequence[Mapping[str, Any]],
-    page: int = 1,
+    pages: Sequence[int] = PAGE_NUMBERS_DESCENDING,
 ) -> list[dict[str, Any]]:
     ordered_results: list[Any] = []
     for program in programs:
         if program.get("crowdstream_enabled") is not True:
             continue
         program_slug = program["slug"]
-        page_data = await fetch_crowdstream_page(session, program_slug, page=page)
-        ordered_results.extend(reversed(page_data["results"]))
-    return select_new_items(ordered_results, processed_ids)
+        for page in pages:
+            page_data = await fetch_crowdstream_page(session, program_slug, page=page)
+            ordered_results.extend(page_data["results"])
+
+    valid_results = [item for item in ordered_results if isinstance(item, dict)]
+    valid_results.sort(key=crowdstream_sort_key)
+    return select_new_items(valid_results, processed_ids)
 
 
 async def deliver_new_items(
@@ -605,7 +568,10 @@ async def run_bot(
     enabled_programs = [
         program for program in programs if program["crowdstream_enabled"]
     ]
-    print(f"[*] Monitoring page 1 for {len(enabled_programs)} paid programs.")
+    page_list = ", ".join(str(page) for page in PAGE_NUMBERS_DESCENDING)
+    print(
+        f"[*] Monitoring pages {page_list} for {len(enabled_programs)} paid programs."
+    )
 
     timeout = aiohttp.ClientTimeout(total=REQUEST_TIMEOUT_SECONDS)
     try:
@@ -616,11 +582,15 @@ async def run_bot(
                 enabled_programs,
             )
             if not new_items:
-                print("[*] Checked page 1 for every program. No new reports detected.")
+                print(
+                    f"[*] Checked pages {page_list} for every program. "
+                    "No new reports detected."
+                )
                 return 0
 
             print(
-                f"[*] Found {len(new_items)} new page-1 reports. Broadcasting alerts..."
+                f"[*] Found {len(new_items)} new reports across pages {page_list}. "
+                "Broadcasting oldest first..."
             )
             failures = await deliver_new_items(
                 session,

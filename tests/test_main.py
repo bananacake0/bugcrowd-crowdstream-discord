@@ -73,7 +73,11 @@ class DateAndEmbedTests(unittest.TestCase):
         )
         self.assertEqual(
             embed["fields"][-1],
-            {"name": "Disclosed on", "value": "27 Aug 2026", "inline": False},
+            {
+                "name": "\u200b",
+                "value": "Disclosed on 27 Aug 2026",
+                "inline": False,
+            },
         )
         self.assertNotIn("Researcher", {field["name"] for field in embed["fields"]})
 
@@ -81,15 +85,36 @@ class DateAndEmbedTests(unittest.TestCase):
         embed = main.build_discord_embed(
             {
                 "engagement_name": "Example",
+                "engagement_path": "/engagements/example",
+                "submission_state_text": "Submission accepted on target: example.com",
                 "accepted_at": "28 Aug 2026",
                 "submission_state_date_text": "Accepted on 28 Aug 2026",
                 "created_at": "2026-08-20T12:00:00Z",
+                "priority": 3,
+                "researcher_username": "researcher",
+                "researcher_profile_path": "/researchers/researcher",
+                "crowdstream_name_visible": True,
+                "logo_url": "https://example.com/program-logo.png",
             }
         )
 
+        self.assertEqual(embed["title"], "Submission accepted on target: example.com")
+        self.assertEqual(embed["footer"]["text"], "Submitted on 20 Aug 2026")
+        self.assertEqual(
+            embed["thumbnail"], {"url": "https://example.com/program-logo.png"}
+        )
+        self.assertEqual(
+            [field["name"] for field in embed["fields"]],
+            ["Researcher", "Engagement", "Priority", "\u200b"],
+        )
+        self.assertEqual(embed["fields"][2]["value"], "`P3`")
         self.assertEqual(
             embed["fields"][-1],
-            {"name": "Accepted on", "value": "28 Aug 2026", "inline": False},
+            {
+                "name": "\u200b",
+                "value": "Accepted on 28 Aug 2026",
+                "inline": False,
+            },
         )
 
     def test_each_priority_has_readable_text_badge_and_sidebar_color(self):
@@ -100,50 +125,20 @@ class DateAndEmbedTests(unittest.TestCase):
                     field for field in embed["fields"] if field["name"] == "Priority"
                 )
 
-                self.assertEqual(priority_field["value"], f"**P{priority}**")
+                self.assertEqual(priority_field["value"], f"`P{priority}`")
                 self.assertEqual(embed["color"], main.COLOR_BY_PRIORITY[priority])
-                if priority in main.PRIORITY_THUMBNAILS:
-                    self.assertEqual(
-                        embed["thumbnail"],
-                        {
-                            "url": "attachment://"
-                            f"{main.PRIORITY_THUMBNAILS[priority].name}"
-                        },
-                    )
-                else:
-                    self.assertNotIn("thumbnail", embed)
+                self.assertNotIn("thumbnail", embed)
 
-    def test_priority_message_includes_each_thumbnail_once(self):
-        payload, attachment_files = main.build_discord_message(
-            [
-                {"id": "p1-first", "priority": 1},
-                {"id": "p1-second", "priority": 1},
-                {"id": "p2", "priority": 2},
-                {"id": "p3", "priority": 3},
-            ]
+    def test_program_logo_remains_thumbnail_for_high_priority(self):
+        embed = main.build_discord_embed(
+            {
+                "priority": 1,
+                "logo_url": "https://example.com/program-logo.png",
+            }
         )
 
         self.assertEqual(
-            payload["attachments"],
-            [
-                {
-                    "id": 0,
-                    "filename": "priority-p1.png",
-                    "description": "P1 priority badge",
-                },
-                {
-                    "id": 1,
-                    "filename": "priority-p2.png",
-                    "description": "P2 priority badge",
-                },
-            ],
-        )
-        self.assertEqual(
-            [filename for filename, _ in attachment_files],
-            ["priority-p1.png", "priority-p2.png"],
-        )
-        self.assertTrue(
-            all(content.startswith(b"\x89PNG") for _, content in attachment_files)
+            embed["thumbnail"], {"url": "https://example.com/program-logo.png"}
         )
 
     def test_external_bugcrowd_path_is_rejected(self):
@@ -168,7 +163,24 @@ class DateAndEmbedTests(unittest.TestCase):
 
         self.assertEqual(embed["title"], "Disclosed: Report")
         self.assertEqual(embed["footer"]["text"], "Submitted on Unknown")
-        self.assertEqual(embed["fields"][-1]["value"], "Recently")
+        self.assertEqual(embed["fields"][-1]["value"], "Disclosed on Recently")
+
+    def test_crowdstream_sort_key_uses_event_date(self):
+        reports = [
+            {"id": "newest", "accepted_at": "30 Aug 2026"},
+            {
+                "id": "middle",
+                "disclosed": True,
+                "disclosed_at": "20 Aug 2026",
+            },
+            {"id": "oldest", "accepted_at": "5 Aug 2026"},
+        ]
+
+        reports.sort(key=main.crowdstream_sort_key)
+
+        self.assertEqual(
+            [report["id"] for report in reports], ["oldest", "middle", "newest"]
+        )
 
 
 class HistoryTests(unittest.TestCase):
@@ -311,12 +323,14 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         )
 
     @patch("main.fetch_crowdstream_page", new_callable=AsyncMock)
-    async def test_fetches_enabled_program_page_and_orders_each_oldest_first(
+    async def test_fetches_program_pages_then_globally_sorts_oldest_first(
         self, fetch_page
     ):
         fetch_page.side_effect = [
-            {"results": [{"id": "atlassian-new"}, {"id": "atlassian-old"}]},
-            {"results": [{"id": "rapyd-new"}, {"id": "rapyd-old"}]},
+            {"results": [{"id": "atlassian-older", "accepted_at": "10 Aug 2026"}]},
+            {"results": [{"id": "atlassian-new", "accepted_at": "30 Aug 2026"}]},
+            {"results": [{"id": "rapyd-oldest", "accepted_at": "5 Aug 2026"}]},
+            {"results": [{"id": "rapyd-middle", "accepted_at": "20 Aug 2026"}]},
         ]
         session = object()
         programs = [
@@ -337,18 +351,19 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(
             [call.args[1] for call in fetch_page.await_args_list],
-            ["atlassian", "rapyd"],
+            ["atlassian", "atlassian", "rapyd", "rapyd"],
         )
         self.assertEqual(
-            [call.kwargs["page"] for call in fetch_page.await_args_list], [1, 1]
+            [call.kwargs["page"] for call in fetch_page.await_args_list],
+            [2, 1, 2, 1],
         )
         self.assertEqual(
             [item["id"] for item in new_items],
             [
-                "atlassian-old",
+                "rapyd-oldest",
+                "atlassian-older",
+                "rapyd-middle",
                 "atlassian-new",
-                "rapyd-old",
-                "rapyd-new",
             ],
         )
 
@@ -396,19 +411,6 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertEqual(cooldown, 1.25)
-
-    async def test_discord_sends_priority_thumbnail_as_multipart(self):
-        session = FakeSession([FakeResponse(204)])
-
-        await main.send_to_discord(
-            session,
-            "https://discord.com/webhook",
-            [{"id": "critical", "priority": 1}],
-        )
-
-        post_arguments = session.calls[0][2]
-        self.assertIn("data", post_arguments)
-        self.assertNotIn("json", post_arguments)
 
     async def test_discord_does_not_retry_permanent_client_error(self):
         session = FakeSession([FakeResponse(400)])
