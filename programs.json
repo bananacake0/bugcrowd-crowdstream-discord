@@ -705,11 +705,6 @@
     "crowdstream_enabled": true
   },
   {
-    "slug": "metainfkft",
-    "name": "META-INF",
-    "crowdstream_enabled": true
-  },
-  {
     "slug": "mgmmacau-mbb-og",
     "name": "MGM China Holdings Limited Managed Bug Bounty Program",
     "crowdstream_enabled": true
