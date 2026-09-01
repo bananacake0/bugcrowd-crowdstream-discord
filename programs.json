@@ -30,6 +30,11 @@
     "crowdstream_enabled": true
   },
   {
+    "slug": "afterpay",
+    "name": "Afterpay Bug Bounty Program",
+    "crowdstream_enabled": false
+  },
+  {
     "slug": "agile-pulse",
     "name": "AgilePulse Marketplace Bug Bounty Program",
     "crowdstream_enabled": false
