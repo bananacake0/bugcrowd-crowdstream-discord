@@ -265,6 +265,7 @@ class ProgramsTests(unittest.TestCase):
                             "slug": "atlassian",
                             "name": "Atlassian",
                             "crowdstream_enabled": True,
+                            "reward_summary": "$100 - $10,000",
                         },
                         {
                             "slug": "launchdarkly-mbb-og",
@@ -283,6 +284,7 @@ class ProgramsTests(unittest.TestCase):
                         "slug": "atlassian",
                         "name": "Atlassian",
                         "crowdstream_enabled": True,
+                        "reward_summary": "$100 - $10,000",
                     },
                     {
                         "slug": "launchdarkly-mbb-og",
@@ -292,7 +294,7 @@ class ProgramsTests(unittest.TestCase):
                 ],
             )
 
-    def test_rejects_duplicate_or_unsafe_program_slugs(self):
+    def test_rejects_invalid_program_state(self):
         invalid_program_lists = [
             [
                 {
@@ -311,6 +313,14 @@ class ProgramsTests(unittest.TestCase):
                     "slug": "../unsafe",
                     "name": "Unsafe",
                     "crowdstream_enabled": True,
+                }
+            ],
+            [
+                {
+                    "slug": "invalid-reward",
+                    "name": "Invalid Reward",
+                    "crowdstream_enabled": True,
+                    "reward_summary": 100,
                 }
             ],
         ]
@@ -340,15 +350,24 @@ class ProgramsTests(unittest.TestCase):
             )
             self.assertEqual(list(programs_file.parent.glob("*.tmp")), [])
 
-    def test_catalog_slug_preserves_case_required_by_bugcrowd(self):
+    def test_catalog_program_preserves_slug_case_and_extracts_rewards(self):
         self.assertEqual(
             main.paid_program_from_catalog(
                 {
                     "name": "CoinDesk Data",
                     "briefUrl": "/engagements/CCData-mbb-og",
+                    "rewardSummary": {
+                        "summary": "$50 - $5,000",
+                        "minReward": "$50",
+                        "maxReward": "$5,000",
+                    },
                 }
             ),
-            {"slug": "CCData-mbb-og", "name": "CoinDesk Data"},
+            {
+                "slug": "CCData-mbb-og",
+                "name": "CoinDesk Data",
+                "reward_summary": "$50 - $5,000",
+            },
         )
 
 
@@ -534,7 +553,48 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result, payload)
         sleep.assert_awaited_once_with(0.25)
 
-    async def test_fetches_every_paid_catalog_page_and_deduplicates_slug(self):
+    async def test_fetches_every_paid_catalog_page(self):
+        session = FakeSession(
+            [
+                FakeResponse(
+                    200,
+                    payload={
+                        "engagements": [
+                            {"name": "Alpha", "briefUrl": "/engagements/alpha"},
+                            {"name": "Beta", "briefUrl": "/engagements/beta"},
+                        ],
+                        "paginationMeta": {"limit": 2, "totalCount": 4},
+                    },
+                ),
+                FakeResponse(
+                    200,
+                    payload={
+                        "engagements": [
+                            {"name": "Gamma", "briefUrl": "/engagements/gamma"},
+                            {"name": "Delta", "briefUrl": "/engagements/delta"},
+                        ]
+                    },
+                ),
+            ]
+        )
+
+        programs = await main.fetch_paid_programs(session)
+
+        self.assertEqual(
+            programs,
+            [
+                {"slug": "alpha", "name": "Alpha"},
+                {"slug": "beta", "name": "Beta"},
+                {"slug": "delta", "name": "Delta"},
+                {"slug": "gamma", "name": "Gamma"},
+            ],
+        )
+        self.assertEqual([call[2]["params"]["page"] for call in session.calls], [1, 2])
+        self.assertTrue(
+            all(call[2]["params"]["sort_by"] == "starts" for call in session.calls)
+        )
+
+    async def test_rejects_catalog_with_duplicate_slug_across_pages(self):
         session = FakeSession(
             [
                 FakeResponse(
@@ -559,17 +619,10 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
             ]
         )
 
-        programs = await main.fetch_paid_programs(session)
-
-        self.assertEqual(
-            programs,
-            [
-                {"slug": "alpha", "name": "Alpha"},
-                {"slug": "beta", "name": "Beta"},
-                {"slug": "gamma", "name": "Gamma"},
-            ],
-        )
-        self.assertEqual([call[2]["params"]["page"] for call in session.calls], [1, 2])
+        with self.assertRaisesRegex(
+            main.ProgramsError, "3 unique programs from 4 rows"
+        ):
+            await main.fetch_paid_programs(session)
 
     async def test_fetches_latest_program_metadata_from_changelog(self):
         session = FakeSession(
@@ -644,6 +697,7 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
                 "slug": "nubank",
                 "name": "Nubank",
                 "crowdstream_enabled": True,
+                "reward_summary": "$100 - $10,000",
             },
             "added",
             {
@@ -660,6 +714,9 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
 
         fields = {field["name"]: field["value"] for field in embed["fields"]}
         self.assertNotIn("Slug", fields)
+        self.assertEqual(fields["Reward summary"], "$100 - $10,000")
+        self.assertNotIn("Minimum reward", fields)
+        self.assertNotIn("Maximum reward", fields)
         self.assertEqual(fields["Industry"], "Finance")
         self.assertEqual(fields["Reward model"], "Pay For Success")
         self.assertEqual(fields["In-scope targets"], "2")
@@ -695,6 +752,30 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(added, [refreshed[1]])
         self.assertEqual(removed, [previous[1]])
+
+    @patch("main.fetch_paid_programs", new_callable=AsyncMock)
+    async def test_refresh_programs_reports_two_removals(self, fetch_paid_programs):
+        fetch_paid_programs.return_value = [{"slug": "existing", "name": "Existing"}]
+        previous = [
+            {"slug": "existing", "name": "Existing", "crowdstream_enabled": True},
+            {
+                "slug": "removed-one",
+                "name": "Removed One",
+                "crowdstream_enabled": False,
+                "reward_summary": "$50 - $5,000",
+            },
+            {
+                "slug": "removed-two",
+                "name": "Removed Two",
+                "crowdstream_enabled": True,
+            },
+        ]
+
+        refreshed, added, removed = await main.refresh_programs(object(), previous)
+
+        self.assertEqual(refreshed, [previous[0]])
+        self.assertEqual(added, [])
+        self.assertEqual(removed, previous[1:])
 
     @patch("main.asyncio.sleep", new_callable=AsyncMock)
     async def test_discord_prefers_json_retry_after_then_succeeds(self, sleep):

@@ -1,6 +1,6 @@
 # Bugcrowd CrowdStream Discord bot
 
-Fetches public CrowdStream reports from every paid Bugcrowd bug-bounty program and posts them to Discord. Runs can be started manually from GitHub Actions.
+Fetches public CrowdStream reports from every paid Bugcrowd bug-bounty program and posts them to Discord. It is designed to run once per hour from an Ubuntu crontab and can also be invoked manually.
 
 ## Current behavior
 
@@ -16,6 +16,8 @@ The first run performs a complete backfill. It:
 8. Writes `full_scan_complete: true` only after the complete scan and all report deliveries succeed.
 
 After that marker is present, each run still refreshes every paid-program catalog page and detects additions/removals, but checks only page 1 of each enabled CrowdStream. This keeps routine runs short while the processed-ID history prevents duplicates. Delete `scan_state.json` or set its marker to `false` to request another full backfill.
+
+Catalog snapshots are accepted only when Bugcrowd returns the advertised number of unique program slugs. If pagination shifts duplicate a program across page boundaries, the run stops without sending program-change alerts or replacing the last complete snapshot.
 
 "All reports" means every report exposed by the programs' public CrowdStream JSON endpoints. It does not include private submissions or reports Bugcrowd does not publish to CrowdStream.
 
@@ -34,15 +36,15 @@ Report embeds can include:
 - Original submission date from `created_at`
 - Program logo thumbnail
 
-Discord messages contain at most ten embeds and respect the 6,000-character embed limit. The bot pauses for at least three seconds between messages and retries rate limits and temporary server errors. If a batch fails permanently, delivery stops to preserve oldest-to-newest order. IDs from earlier successful batches remain saved, so the next manual run resumes safely.
+Discord messages contain at most ten embeds and respect the 6,000-character embed limit. The bot pauses for at least three seconds between messages and retries rate limits and temporary server errors. If a batch fails permanently, delivery stops to preserve oldest-to-newest order. IDs from earlier successful batches remain saved, so the next scheduled or manual run resumes safely.
 
 When `DISCORD_PROGRAMS_WEBHOOK_URL` is configured, programs entering or leaving the paid catalog are posted to a separate Discord channel.
 
-New-program alerts also include metadata from the program's latest public changelog: industry, status, participation, reward model, publish date, in-scope target count, logo, and a short tagline.
+New-program alerts also include the catalog's reward summary, plus metadata from the program's latest public changelog: industry, status, participation, reward model, publish date, in-scope target count, logo, and a short tagline.
 
 ## State files
 
-The repository intentionally starts with valid empty state files:
+The bot persists its state in three JSON files:
 
 | File                 | Purpose                                                                  |
 | -------------------- | ------------------------------------------------------------------------ |
@@ -50,11 +52,11 @@ The repository intentionally starts with valid empty state files:
 | `processed_ids.json` | Submission IDs successfully delivered to Discord                         |
 | `scan_state.json`    | Whether the initial all-pages CrowdStream scan completed successfully    |
 
-On the first run, the bot repopulates `programs.json`, audits duplicate IDs, and treats every currently visible CrowdStream report as new. During the latest development scan on 30 August 2026, the complete backfill contained 3,832 unique reports, or about 384 Discord messages. The live total will change.
+When starting from empty state files, the first run populates `programs.json`, audits duplicate IDs, and treats every currently visible CrowdStream report as new. During the latest development scan on 30 August 2026, the complete backfill contained 3,832 unique reports, or about 384 Discord messages. The live total will change.
 
 If the program-changes webhook is enabled while `programs.json` is empty, the first run also announces every paid program as newly added.
 
-Both files are written atomically. Preserve them between runs unless a deliberate full backfill is required.
+All three files are written atomically. Preserve them between runs unless a deliberate full backfill is required.
 
 If an existing VPS already completed its full backfill before `scan_state.json` was added, seed the marker once before the next run:
 
@@ -104,11 +106,65 @@ uv run --locked main.py
 
 The first command may take several minutes because it fetches every CrowdStream page sequentially. Later commands fetch page 1 only and honor Bugcrowd rate limits.
 
-## GitHub Actions
+## Ubuntu crontab setup
 
-The `CrowdStream to Discord` workflow runs every three hours, anchored at 12:36 AM East Africa Time. Daily runs occur at 12:36 AM, 3:36 AM, 6:36 AM, 9:36 AM, 12:36 PM, 3:36 PM, 6:36 PM, and 9:36 PM EAT. It can also be started manually with **Actions → CrowdStream to Discord → Run workflow**.
+The following example uses the standard `ubuntu` account and installs the project at `/home/ubuntu/bugcrowd-crowdstream-discord`. Adjust both paths if your username or installation directory differs.
 
-Add `DISCORD_WEBHOOK_URL` and optional `DISCORD_PROGRAMS_WEBHOOK_URL` as repository secrets. The workflow runs the checks, validates the persisted state, executes `uv run --locked main.py`, and commits updated `processed_ids.json`, `programs.json`, and `scan_state.json` back to the default branch.
+Install the system requirements and `uv`:
+
+```bash
+sudo apt update
+sudo apt install -y curl git util-linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Clone the repository and install its locked dependencies:
+
+```bash
+cd /home/ubuntu
+git clone https://github.com/bananacake0/bugcrowd-crowdstream-discord.git
+cd /home/ubuntu/bugcrowd-crowdstream-discord
+/home/ubuntu/.local/bin/uv sync --locked
+cp .env.example .env
+chmod 600 .env
+nano .env
+```
+
+Set the Discord webhook values in `.env`. Keep the default state paths so `run-hourly.sh` can commit changes to `processed_ids.json` and `programs.json`:
+
+```dotenv
+CROWDSTREAM_HISTORY_FILE=processed_ids.json
+CROWDSTREAM_PROGRAMS_FILE=programs.json
+CROWDSTREAM_SCAN_STATE_FILE=scan_state.json
+```
+
+Configure the identity used for automatic state commits:
+
+```bash
+git config user.name "crowdstream-bot"
+git config user.email "crowdstream-bot@localhost"
+chmod +x run-hourly.sh
+```
+
+Open the `ubuntu` user's crontab:
+
+```bash
+crontab -e
+```
+
+Add this entry to run the bot once every hour, at minute zero:
+
+```cron
+0 * * * * /usr/bin/flock -n /home/ubuntu/.crowdstream-discord.lock /usr/bin/env UV_BIN=/home/ubuntu/.local/bin/uv /home/ubuntu/bugcrowd-crowdstream-discord/run-hourly.sh >> /home/ubuntu/crowdstream-discord.log 2>&1
+```
+
+`flock` skips a run if the previous scan is still active, preventing overlapping deliveries and state writes. The wrapper runs `uv run --locked main.py`, then creates a commit containing only `processed_ids.json` and `programs.json` when either file differs from `HEAD`. It does not commit unrelated changes or push automatically.
+
+Run the wrapper manually once after setup to verify the webhooks, state, and commit identity before relying on cron:
+
+```bash
+UV_BIN=/home/ubuntu/.local/bin/uv ./run-hourly.sh
+```
 
 ## Development checks
 
@@ -118,4 +174,4 @@ uv run --locked ruff format --check .
 uv run --locked -m unittest discover -s tests -v
 ```
 
-The current suite contains 35 tests covering catalog pagination, complete CrowdStream pagination, page-one incremental scans, global ordering, date semantics, embed construction, retries, Discord batching, atomic state persistence, empty-state bootstrap, and VPS state-path configuration.
+The current suite contains 39 tests covering catalog pagination, complete CrowdStream pagination, page-one incremental scans, global ordering, date semantics, embed construction, retries, Discord batching, atomic state persistence, empty-state bootstrap, and VPS state-path configuration.

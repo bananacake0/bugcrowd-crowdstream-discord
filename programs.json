@@ -2,111 +2,177 @@
   {
     "slug": "CCData-mbb-og",
     "name": "CoinDesk Data - Data API",
+    "reward_summary": "$250 - $7,500",
+    "min_reward": "$250",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "FindOut-infovis",
     "name": "FindOut InfoVis AB - Marketplace Bug Bounty Program",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "JaangaInc-mbb-market",
     "name": "Jaanga Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "accxia-gmbh",
     "name": "Accxia Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "acorns",
     "name": "Acorns Grow, Inc.",
+    "reward_summary": "$100 - $4,000",
+    "min_reward": "$100",
+    "max_reward": "$4,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "aelbox",
     "name": "Aelbox Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "afterpay",
     "name": "Afterpay Bug Bounty Program",
+    "reward_summary": "$100 - $5,000",
+    "min_reward": "$100",
+    "max_reward": "$5,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "agile-pulse",
     "name": "AgilePulse Marketplace Bug Bounty Program",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "agilislt",
     "name": "Agilis LT Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "aiven-mbb-og",
     "name": "Aiven Managed Bug Bounty",
+    "reward_summary": "$50 - $25,000",
+    "min_reward": "$50",
+    "max_reward": "$25,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "appliger",
     "name": "AppLiger",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "appsvio",
     "name": "Appsvio Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "arlo",
     "name": "Arlo Cash Rewards",
+    "reward_summary": "$25 - $4,500",
+    "min_reward": "$25",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "asana",
     "name": "Asana",
+    "reward_summary": "$100 - $6,500",
+    "min_reward": "$100",
+    "max_reward": "$6,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "atlassian",
     "name": "Atlassian",
+    "reward_summary": "$100 - $12,000",
+    "min_reward": "$100",
+    "max_reward": "$12,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "atlassianapps",
     "name": "Atlassian-Built Apps",
+    "reward_summary": "$100 - $4,000",
+    "min_reward": "$100",
+    "max_reward": "$4,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "aurory-mbb-og2",
     "name": "Aurory Managed Bug Bounty Engagement (Public)",
+    "reward_summary": "$100 - $4,500",
+    "min_reward": "$100",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "auth0-okta",
     "name": "Auth0 by Okta",
+    "reward_summary": "$100 - $50,000",
+    "min_reward": "$100",
+    "max_reward": "$50,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "automationconsultants",
     "name": "AppFox",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "axis-os-public",
     "name": "AXIS OS",
+    "reward_summary": "$500 - $40,000",
+    "min_reward": "$500",
+    "max_reward": "$40,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "backblaze",
     "name": "Backblaze",
+    "reward_summary": "$500 - $6,500",
+    "min_reward": "$500",
+    "max_reward": "$6,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "balsamiq",
     "name": "Balsamiq for Atlassian Products",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": false
   },
   {
@@ -117,171 +183,273 @@
   {
     "slug": "binance",
     "name": "Binance",
+    "reward_summary": "$200 - $10,000",
+    "min_reward": "$200",
+    "max_reward": "$10,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "bitdefender",
     "name": "Bitdefender",
+    "reward_summary": "$100 - $15,000",
+    "min_reward": "$100",
+    "max_reward": "$15,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "bitdefenderbox2",
     "name": "Bitdefender Box v2",
+    "reward_summary": "$200 - $5,000",
+    "min_reward": "$200",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "bitgo-mbb-og-public",
     "name": "BitGo Managed Public Bug Bounty Engagement",
+    "reward_summary": "$100 - $4,500",
+    "min_reward": "$100",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "bitgo-mobileapps-mbb-og",
     "name": "BitGo Mobile Apps Bug Bounty Engagement",
+    "reward_summary": "$175 - $4,500",
+    "min_reward": "$175",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "bitpanda-og-bb",
     "name": "Bitpanda Ongoing Bug Bounty",
+    "reward_summary": "$100 - $15,000",
+    "min_reward": "$100",
+    "max_reward": "$15,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "bitso-mbb-og",
     "name": "Bitso Managed Bug Bounty Engagement",
+    "reward_summary": "$50 - $7,500",
+    "min_reward": "$50",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "blockchain-dot-com",
     "name": "Blockchain.com Managed Bug Bounty Engagement",
+    "reward_summary": "$100 - $10,000",
+    "min_reward": "$100",
+    "max_reward": "$10,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "blockopensource",
     "name": "Block Open Source",
+    "reward_summary": "Points - $5,000",
+    "min_reward": "Points",
+    "max_reward": "$5,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "blofin-crypto-mbb-og",
     "name": "Blofin Crypto Managed Bug Bounty Engagement",
+    "reward_summary": "$50 - $4,000",
+    "min_reward": "$50",
+    "max_reward": "$4,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "boja",
     "name": "BOJA Consulting Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "bolt-og",
     "name": "Bolt Technology O\u00dc",
+    "reward_summary": "$150 - $6,500",
+    "min_reward": "$150",
+    "max_reward": "$6,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "brizoit",
     "name": "BrizoIT",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "brokenbuild",
     "name": "Broken Build Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "browserstack-market",
     "name": "BrowserStack Inc. Marketplace Managed Bug Bounty Engagement",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "bugcrowd",
     "name": "Bugcrowd",
+    "reward_summary": "$100 - $10,000",
+    "min_reward": "$100",
+    "max_reward": "$10,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "bullish",
     "name": "Bullish.com",
+    "reward_summary": "$200 - $12,000",
+    "min_reward": "$200",
+    "max_reward": "$12,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "bullish-exchange",
     "name": "Bullish Exchange",
+    "reward_summary": "$200 - $25,000",
+    "min_reward": "$200",
+    "max_reward": "$25,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "caelor-group-market",
     "name": "Caelor Group",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "canva",
     "name": "Canva",
+    "reward_summary": "$200 - $15,000",
+    "min_reward": "$200",
+    "max_reward": "$15,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "carrefour",
     "name": "Majid Al Futtaim Retail",
+    "reward_summary": "Points - $4,000",
+    "min_reward": "Points",
+    "max_reward": "$4,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "cashapp",
     "name": "Cash App",
+    "reward_summary": "$100 - $18,000",
+    "min_reward": "$100",
+    "max_reward": "$18,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "celix-solutions-market",
     "name": "celix Solutions GmbH Marketplace Bug Bounty Program",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "cfr",
     "name": "Council on Foreign Relations",
+    "reward_summary": "$100 - $2,100",
+    "min_reward": "$100",
+    "max_reward": "$2,100",
     "crowdstream_enabled": true
   },
   {
     "slug": "chime",
     "name": "Chime Managed Bug Bounty Engagement",
+    "reward_summary": "$50 - $20,000",
+    "min_reward": "$50",
+    "max_reward": "$20,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "chipotle-mbb-og",
     "name": "Chipotle Managed Bug Bounty Engagement",
+    "reward_summary": "$175 - $4,500",
+    "min_reward": "$175",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "cisconetworking",
     "name": "Cisco Networking",
+    "reward_summary": "$100 - $10,000",
+    "min_reward": "$100",
+    "max_reward": "$10,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "city-of-vienna-mbb-og",
     "name": "City of Vienna Managed Bug Bounty",
+    "reward_summary": "Points - $3,500",
+    "min_reward": "Points",
+    "max_reward": "$3,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "classdojo",
     "name": "ClassDojo",
+    "reward_summary": "Points - $2,500",
+    "min_reward": "Points",
+    "max_reward": "$2,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "clickhouse",
     "name": "ClickHouse",
+    "reward_summary": "$50 - $2,500",
+    "min_reward": "$50",
+    "max_reward": "$2,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "cloudinary",
     "name": "Cloudinary",
+    "reward_summary": "Points - $4,000",
+    "min_reward": "Points",
+    "max_reward": "$4,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "cms-bbpublic",
     "name": "Centers for Medicare & Medicaid Services - Public Bug Bounty Program 2026",
+    "reward_summary": "$250 - $7,000",
+    "min_reward": "$250",
+    "max_reward": "$7,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "codeclou",
     "name": "codeclou GmbH",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "codefortynine",
     "name": "codefortynine",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
@@ -292,21 +460,33 @@
   {
     "slug": "coindesk-mbb-og",
     "name": "CoinDesk.com",
+    "reward_summary": "$250 - $7,500",
+    "min_reward": "$250",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "coindesk-mobile-mbb-og",
     "name": "CoinDesk Mobile",
+    "reward_summary": "$250 - $7,500",
+    "min_reward": "$250",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "colined",
     "name": "Colined",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "comcast-mbb",
     "name": "Comcast Xfinity Bug Bounty",
+    "reward_summary": "$50 - $5,500",
+    "min_reward": "$50",
+    "max_reward": "$5,500",
     "crowdstream_enabled": true
   },
   {
@@ -317,486 +497,777 @@
   {
     "slug": "consensus-mbb-og",
     "name": "Consensus by CoinDesk",
+    "reward_summary": "$250 - $7,500",
+    "min_reward": "$250",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "craftcoders",
     "name": "Craft Coders Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "dell-com",
     "name": "Dell Technologies Application Bug Bounty",
+    "reward_summary": "$50 - $2,500",
+    "min_reward": "$50",
+    "max_reward": "$2,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "dell-product",
     "name": "Dell Technologies' Products Bug Bounty Program",
+    "reward_summary": "$200 - $5,000",
+    "min_reward": "$200",
+    "max_reward": "$5,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "devacrobats-market",
     "name": "DevAcrobats",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "deviniti",
     "name": "Deviniti",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "devsamurai",
     "name": "DevSamurai",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "directly",
     "name": "Directly",
+    "reward_summary": "$250 - $3,000",
+    "min_reward": "$250",
+    "max_reward": "$3,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "dutch-beginners-market",
     "name": "Dutch Beginners ZZP Marketplace Managed Bug Bounty Engagement",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "easyagile",
     "name": "Easy Agile",
+    "reward_summary": "$150 - $2,000",
+    "min_reward": "$150",
+    "max_reward": "$2,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "eazybi",
     "name": "eazyBI",
+    "reward_summary": "$150 - $3,000",
+    "min_reward": "$150",
+    "max_reward": "$3,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "elementor",
     "name": "Elementor: Bug Bounty Program",
+    "reward_summary": "Points - $4,000",
+    "min_reward": "Points",
+    "max_reward": "$4,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "elements",
     "name": "Elements",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "entain-glf-mbb-og",
     "name": "Entain Game Logic Flaws Bug Bounty Program",
+    "reward_summary": "Points - $6,500",
+    "min_reward": "Points",
+    "max_reward": "$6,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "entain-public-mbb-og",
     "name": "Entain Public Managed Bug Bounty Engagement 2024",
+    "reward_summary": "$100 - $5,000",
+    "min_reward": "$100",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "epam-mbb-og",
     "name": "EPAM Systems Managed Bug Bounty Program",
+    "reward_summary": "$50 - $1,000",
+    "min_reward": "$50",
+    "max_reward": "$1,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "etoro-mbb-og",
     "name": "eToro Managed Bug Bounty Engagement",
+    "reward_summary": "$100 - $15,000",
+    "min_reward": "$100",
+    "max_reward": "$15,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "etsy",
     "name": "Etsy",
+    "reward_summary": "$50 - $10,000",
+    "min_reward": "$50",
+    "max_reward": "$10,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "felix-health-mbb-og",
     "name": "Felix Health Managed Bug Bounty Engagement",
+    "reward_summary": "$175 - $4,500",
+    "min_reward": "$175",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "fiftyfivedegrees",
     "name": "55 Degrees",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "financialforce",
     "name": "Certinia (formerly FinancialForce)",
+    "reward_summary": "$175 - $4,500",
+    "min_reward": "$175",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "fireblocks-mbb-og",
     "name": "Fireblocks Web Managed Bug Bounty Engagement",
+    "reward_summary": "$20 - $12,000",
+    "min_reward": "$20",
+    "max_reward": "$12,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "fireblocks-mbb-og2",
     "name": "Fireblocks MPC Managed Bug Bounty Engagement",
+    "reward_summary": "$200 - $150,000",
+    "min_reward": "$200",
+    "max_reward": "$150,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "fis",
     "name": "FIS",
+    "reward_summary": "Points - $20,000",
+    "min_reward": "Points",
+    "max_reward": "$20,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "fivetran-mbb-og",
     "name": "Fivetran",
+    "reward_summary": "Points - $15,000",
+    "min_reward": "Points",
+    "max_reward": "$15,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "flourish",
     "name": "Flourish",
+    "reward_summary": "$100 - $6,000",
+    "min_reward": "$100",
+    "max_reward": "$6,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "freedomofpress",
     "name": "SecureDrop",
+    "reward_summary": "$100 - $2,500",
+    "min_reward": "$100",
+    "max_reward": "$2,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "gearset-mbb",
     "name": "Gearset: Managed Bug Bounty",
+    "reward_summary": "$200 - $6,000",
+    "min_reward": "$200",
+    "max_reward": "$6,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "glassdoor-ogbb",
     "name": "Glassdoor Managed Bug Bounty Engagement",
+    "reward_summary": "$50 - $7,000",
+    "min_reward": "$50",
+    "max_reward": "$7,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "glean-technologies-public",
     "name": "Glean Technologies Public Engagement",
+    "reward_summary": "$200 - $5,000",
+    "min_reward": "$200",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "gliffy",
     "name": "Gliffy",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "hostgator-latam-bb",
     "name": "HostGator LATAM Bug Bounty",
+    "reward_summary": "Points - $2,500",
+    "min_reward": "Points",
+    "max_reward": "$2,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "hotdoc",
     "name": "HotDoc",
+    "reward_summary": "$50 - $8,000",
+    "min_reward": "$50",
+    "max_reward": "$8,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "hpe-networking-product-public",
     "name": "HPE Networking Product Public Program",
+    "reward_summary": "$300 - $5,000",
+    "min_reward": "$300",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "hutgroup-public",
     "name": "The Hut Group: Public Managed Bug Bounty Engagement",
+    "reward_summary": "$100 - $2,500",
+    "min_reward": "$100",
+    "max_reward": "$2,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "hypixel-studios-mbb-og",
     "name": "Hypixel Studios Managed Bug Bounty Engagement",
+    "reward_summary": "$300 - $25,000",
+    "min_reward": "$300",
+    "max_reward": "$25,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "ibotta",
     "name": "Ibotta",
+    "reward_summary": "$250 - $1,000",
+    "min_reward": "$250",
+    "max_reward": "$1,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "ifood-og",
     "name": "iFood: Bug Bounty Program",
+    "reward_summary": "$150 - $3,750",
+    "min_reward": "$150",
+    "max_reward": "$3,750",
     "crowdstream_enabled": true
   },
   {
     "slug": "immutable",
     "name": "Immutable Bug Bounty",
+    "reward_summary": "$25 - $10,000",
+    "min_reward": "$25",
+    "max_reward": "$10,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "imperva-mbb",
     "name": "Imperva - Thales Bug Bounty",
+    "reward_summary": "$150 - $2,500",
+    "min_reward": "$150",
+    "max_reward": "$2,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "indeed",
     "name": "Indeed",
+    "reward_summary": "$50 - $10,000",
+    "min_reward": "$50",
+    "max_reward": "$10,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "inprowiser",
     "name": "Inprowiser Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "intercom",
     "name": "Intercom",
+    "reward_summary": "$300 - $6,000",
+    "min_reward": "$300",
+    "max_reward": "$6,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "internetbrands-public",
     "name": "Internet Brands Public",
+    "reward_summary": "Points - $2,000",
+    "min_reward": "Points",
+    "max_reward": "$2,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "irobot",
     "name": "iRobot",
+    "reward_summary": "$100 - $4,500",
+    "min_reward": "$100",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "izymes",
     "name": "Izymes",
+    "reward_summary": "$100 - $2,500",
+    "min_reward": "$100",
+    "max_reward": "$2,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "j-tricks",
     "name": "J-Tricks - Marketplace Bug Bounty Program",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "jora",
     "name": "Jora",
+    "reward_summary": "$50 - $2,500",
+    "min_reward": "$50",
+    "max_reward": "$2,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "justeattakeaway",
     "name": "Just Eat Takeaway.com",
+    "reward_summary": "Points - $4,500",
+    "min_reward": "Points",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "k15t",
     "name": "K15t",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "kaleido",
     "name": "Kaleido",
+    "reward_summary": "Points - $6,000",
+    "min_reward": "Points",
+    "max_reward": "$6,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "kantega",
     "name": "Kantega SSO",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "keepersecurity",
     "name": "Keeper Security Public Bounty Program",
+    "reward_summary": "Points - $10,000",
+    "min_reward": "Points",
+    "max_reward": "$10,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "kiteworks-public",
     "name": "Kiteworks",
+    "reward_summary": "$250 - $25,000",
+    "min_reward": "$250",
+    "max_reward": "$25,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "klaviyo-og",
     "name": "Klaviyo Managed Bug Bounty",
+    "reward_summary": "$150 - $3,500",
+    "min_reward": "$150",
+    "max_reward": "$3,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "kohls",
     "name": "Kohl's",
+    "reward_summary": "$100 - $4,500",
+    "min_reward": "$100",
+    "max_reward": "$4,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "kucoin",
     "name": "KuCoin Managed Bug Bounty Program",
+    "reward_summary": "$20 - $15,000",
+    "min_reward": "$20",
+    "max_reward": "$15,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "lastpass",
     "name": "LastPass",
+    "reward_summary": "Points - $5,000",
+    "min_reward": "Points",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "latitude-financial-service-bugbounty",
     "name": "Latitude Financial Services Bug Bounty",
+    "reward_summary": "$150 - $7,500",
+    "min_reward": "$150",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "launchdarkly-mbb-og",
     "name": "LaunchDarkly Managed Bug Bounty Engagement",
+    "reward_summary": "$150 - $7,500",
+    "min_reward": "$150",
+    "max_reward": "$7,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "legacy-blockchain-mbb-og",
     "name": "Electroneum Legacy Blockchain: EOL",
+    "reward_summary": "$200 - $12,000",
+    "min_reward": "$200",
+    "max_reward": "$12,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "lightspeed-hospitality",
     "name": "Lightspeed Hospitality",
+    "reward_summary": "$250 - $7,500",
+    "min_reward": "$250",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "lightspeed-retail",
     "name": "Lightspeed Retail",
+    "reward_summary": "$250 - $7,500",
+    "min_reward": "$250",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "lime",
     "name": "Lime",
+    "reward_summary": "$150 - $7,000",
+    "min_reward": "$150",
+    "max_reward": "$7,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "linktree-mbb-og",
     "name": "Linktree",
+    "reward_summary": "$25 - $7,500",
+    "min_reward": "$25",
+    "max_reward": "$7,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "litew8",
     "name": "Litew8 GmbH - Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "lululemon",
     "name": "lululemon",
+    "reward_summary": "Points - $8,000",
+    "min_reward": "Points",
+    "max_reward": "$8,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "luno-og",
     "name": "Luno Bug Bounty Program",
+    "reward_summary": "$100 - $7,500",
+    "min_reward": "$100",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "maffashion",
     "name": "Majid Al Futtaim Lifestyle",
+    "reward_summary": "Points - $3,500",
+    "min_reward": "Points",
+    "max_reward": "$3,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "magic-apps",
     "name": "Magic Apps Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "magiclabs-mbb-og",
     "name": "Magic Labs Managed Bug Bounty Engagement",
+    "reward_summary": "$250 - $3,000",
+    "min_reward": "$250",
+    "max_reward": "$3,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "majidalfuttaim-loyalty",
     "name": "Majid Al Futtaim Customer Solutions",
+    "reward_summary": "Points - $2,500",
+    "min_reward": "Points",
+    "max_reward": "$2,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "mallofemirates",
     "name": "Majid Al Futtaim Properties",
+    "reward_summary": "Points - $2,500",
+    "min_reward": "Points",
+    "max_reward": "$2,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "marketplaceexpert",
     "name": "Marketplace Expert SL",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "marvelutionbv",
     "name": "Marvelution",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "mastercard",
     "name": "Mastercard Public Bug Bounty",
+    "reward_summary": "$50 - $5,000",
+    "min_reward": "$50",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "matlab-online",
     "name": "MATLAB Online - Ongoing Bug Bounty Engagement",
+    "reward_summary": "$200 - $7,000",
+    "min_reward": "$200",
+    "max_reward": "$7,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "mattermost-mbb-public",
     "name": "Mattermost Public Bug Bounty Engagement",
+    "reward_summary": "$150 - $2,000",
+    "min_reward": "$150",
+    "max_reward": "$2,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "metainfkft",
     "name": "META-INF",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "mgmmacau-mbb-og",
     "name": "MGM China Holdings Limited Managed Bug Bounty Program",
+    "reward_summary": "$250 - $7,500",
+    "min_reward": "$250",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "mobilitystream",
     "name": "MobilityStream Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "monash-mbb",
     "name": "Monash University Bug Bounty",
+    "reward_summary": "$50 - $7,500",
+    "min_reward": "$50",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "moneytreekkog",
     "name": "Moneytree KK",
+    "reward_summary": "$300 - $5,000",
+    "min_reward": "$300",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "moovit-mbb-og",
     "name": "Moovit Managed Bug Bounty Program",
+    "reward_summary": "$100 - $7,000",
+    "min_reward": "$100",
+    "max_reward": "$7,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "motorolamobility-iot",
     "name": "Motorola Mobility Hardware Engagement",
+    "reward_summary": "$100 - $5,000",
+    "min_reward": "$100",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "moveworkforward",
     "name": "Move Work Forward",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "myfitnesspal-mbb",
     "name": "MyFitnessPal Managed Bug Bounty",
+    "reward_summary": "$50 - $4,500",
+    "min_reward": "$50",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "navan",
     "name": "Navan",
+    "reward_summary": "$150 - $4,500",
+    "min_reward": "$150",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "navarambh",
     "name": "Navarambh",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "nemetschek",
     "name": "Nemetschek",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "neohrms",
     "name": "NEOGOV Public Assets",
+    "reward_summary": "$100 - $3,500",
+    "min_reward": "$100",
+    "max_reward": "$3,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "newrelic-mbb-og-public",
     "name": "New Relic Public Bug Bounty Program",
+    "reward_summary": "$100 - $6,000",
+    "min_reward": "$100",
+    "max_reward": "$6,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "nextupai",
     "name": "Nextup.ai",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "northwestern-mutual-mbb-og",
     "name": "Northwestern Mutual - Public Bug Bounty",
+    "reward_summary": "$200 - $6,000",
+    "min_reward": "$200",
+    "max_reward": "$6,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "nubank",
     "name": "Nubank Brasil Managed Bug Bounty Program",
+    "reward_summary": "$50 - $4,000",
+    "min_reward": "$50",
+    "max_reward": "$4,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "octopus-deploy",
     "name": "Octopus Deploy",
+    "reward_summary": "$200 - $6,000",
+    "min_reward": "$200",
+    "max_reward": "$6,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "octopus-og",
     "name": "Octopus",
+    "reward_summary": "$200 - $6,000",
+    "min_reward": "$200",
+    "max_reward": "$6,000",
     "crowdstream_enabled": true
   },
   {
@@ -807,241 +1278,385 @@
   {
     "slug": "okta",
     "name": "Okta",
+    "reward_summary": "$100 - $75,000",
+    "min_reward": "$100",
+    "max_reward": "$75,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "onetrust",
     "name": "OneTrust",
+    "reward_summary": "$300 - $6,500",
+    "min_reward": "$300",
+    "max_reward": "$6,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "onward-software-solutions-inc",
     "name": "Onward Software Solutions Inc. - Marketplace Bug Bounty Program",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "openai",
     "name": "OpenAI",
+    "reward_summary": "$50 - $6,500",
+    "min_reward": "$50",
+    "max_reward": "$6,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "openai-safety",
     "name": "Safety Bug Bounty",
+    "reward_summary": "$250 - $7,500",
+    "min_reward": "$250",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "opensea",
     "name": "OpenSea Managed Bug Bounty Program",
+    "reward_summary": "$125 - $3,000,000",
+    "min_reward": "$125",
+    "max_reward": "$3,000,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "opera",
     "name": "Opera Public Bug Bounty",
+    "reward_summary": "$50 - $5,000",
+    "min_reward": "$50",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "opsgenie",
     "name": "Opsgenie",
+    "reward_summary": "$100 - $4,000",
+    "min_reward": "$100",
+    "max_reward": "$4,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "optimizely",
     "name": "Optimizely",
+    "reward_summary": "Points - $3,500",
+    "min_reward": "Points",
+    "max_reward": "$3,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "optus-mbb-og",
     "name": "Optus Managed Bug Bounty",
+    "reward_summary": "$150 - $5,000",
+    "min_reward": "$150",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "opus-guard-market",
     "name": "Opus Guard Marketplace Managed Bug Bounty Engagement",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "orderlynetwork-mbb-og",
     "name": "Orderly Network: Bug Bounty Program",
+    "reward_summary": "$200 - $9,000",
+    "min_reward": "$200",
+    "max_reward": "$9,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "orderlynetwork-mbb-og2",
     "name": "Orderly Network Public Managed Bug Bounty Engagement",
+    "reward_summary": "$200 - $9,000",
+    "min_reward": "$200",
+    "max_reward": "$9,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "originenergy-og1",
     "name": "Origin Energy",
+    "reward_summary": "$50 - $2,500",
+    "min_reward": "$50",
+    "max_reward": "$2,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "osl-mbb-og1",
     "name": "OSL Managed Public Bug Bounty Engagement",
+    "reward_summary": "Points - $1,500",
+    "min_reward": "Points",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "ost-consulting-market",
     "name": "OST Consulting SRL Marketplace Managed Bug Bounty Engagement",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "pantheon",
     "name": "Pantheon",
+    "reward_summary": "Points - $500",
+    "min_reward": "Points",
+    "max_reward": "$500",
     "crowdstream_enabled": true
   },
   {
     "slug": "personalcapital",
     "name": "Empower Personal Wealth",
+    "reward_summary": "$150 - $4,000",
+    "min_reward": "$150",
+    "max_reward": "$4,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "pexels",
     "name": "Pexels",
+    "reward_summary": "$100 - $6,000",
+    "min_reward": "$100",
+    "max_reward": "$6,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "pinterest",
     "name": "Pinterest",
+    "reward_summary": "$200 - $25,000",
+    "min_reward": "$200",
+    "max_reward": "$25,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "pixabay",
     "name": "Pixabay",
+    "reward_summary": "$100 - $6,000",
+    "min_reward": "$100",
+    "max_reward": "$6,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "planethosterinc",
     "name": "PlanetHoster Bug Bounty",
+    "reward_summary": "$200 - $3,000",
+    "min_reward": "$200",
+    "max_reward": "$3,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "plugin-people",
     "name": "The Plugin People",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "plusgrade-mbb-public",
     "name": "Plusgrade Loyalty Public Program",
+    "reward_summary": "$150 - $5,000",
+    "min_reward": "$150",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "pnimedia-bb",
     "name": "PNI Media - Bug Bounty",
+    "reward_summary": "$150 - $4,500",
+    "min_reward": "$150",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "programmer-hat-market",
     "name": "Programmer Hat Marketplace Bug Bounty Program",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "projectbalm",
     "name": "ProjectBalm",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "prosus-og",
     "name": "Prosus",
+    "reward_summary": "$100 - $1,250",
+    "min_reward": "$100",
+    "max_reward": "$1,250",
     "crowdstream_enabled": true
   },
   {
     "slug": "quintoandar",
     "name": "QuintoAndar Managed Bug Bounty Engagement",
+    "reward_summary": "Points - $1,000",
+    "min_reward": "Points",
+    "max_reward": "$1,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "quirk-consulting",
     "name": "Quirk Consulting Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "quizlet",
     "name": "Quizlet",
+    "reward_summary": "$150 - $2,000",
+    "min_reward": "$150",
+    "max_reward": "$2,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "radbee",
     "name": "RadBee Ltd.",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "raleyapps",
     "name": "Raley Apps",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "rapyd",
     "name": "Rapyd",
+    "reward_summary": "$100 - $7,500",
+    "min_reward": "$100",
+    "max_reward": "$7,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "rea-mbb-og",
     "name": "REA Group | realestate.com.au, realcommercial.com.au, property.com.au",
+    "reward_summary": "$50 - $4,500",
+    "min_reward": "$50",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "recorded-future-mbb-og",
     "name": "Recorded Future Public Managed Bug Bounty Engagement",
+    "reward_summary": "$250 - $5,000",
+    "min_reward": "$250",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "recroom-og",
     "name": "Rec Room Video Games",
+    "reward_summary": "$150 - $2,500",
+    "min_reward": "$150",
+    "max_reward": "$2,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "redmoon",
     "name": "Redmoon",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "refined2",
     "name": "Refined",
+    "reward_summary": "$100 - $2,500",
+    "min_reward": "$100",
+    "max_reward": "$2,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "releasemanagement",
     "name": "Release Management (by Y2 ENGR)",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "requirement-yogi",
     "name": "Requirement Yogi (Bug bounty)",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "resolutionde",
     "name": "Resolution",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "rv-softwares",
     "name": "RV Softwares Marketplace Bug Bounty Program",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "saasjet",
     "name": "SaaSJet",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "sap-private-invite",
     "name": "SAP Invitational Bug Bounty Program",
+    "reward_summary": "$250 - $20,000",
+    "min_reward": "$250",
+    "max_reward": "$20,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "secureflag-mbb-market",
     "name": "SecureFlag Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "seek",
     "name": "SEEK",
+    "reward_summary": "$50 - $10,000",
+    "min_reward": "$50",
+    "max_reward": "$10,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "seek-com",
     "name": "Seek.com",
+    "reward_summary": "$25 - $6,000",
+    "min_reward": "$25",
+    "max_reward": "$6,000",
     "crowdstream_enabled": false
   },
   {
@@ -1052,276 +1667,441 @@
   {
     "slug": "simplisafe",
     "name": "SimpliSafe Managed Bug Bounty Engagement",
+    "reward_summary": "$175 - $6,000",
+    "min_reward": "$175",
+    "max_reward": "$6,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "skroutz",
     "name": "Skroutz Public Managed Bug Bounty",
+    "reward_summary": "$100 - $5,000",
+    "min_reward": "$100",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "sky-plc-mbb-og",
     "name": "Sky UK/ROI Vulnerability Disclosure Program",
+    "reward_summary": "Points - $1,000",
+    "min_reward": "Points",
+    "max_reward": "$1,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "sky-plc-mbb-og1",
     "name": "Sky Italy Vulnerability Disclosure Program",
+    "reward_summary": "Points - $1,000",
+    "min_reward": "Points",
+    "max_reward": "$1,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "sky-plc-mbb-og2",
     "name": "Sky DACH Vulnerability Disclosure Program",
+    "reward_summary": "Points - $1,000",
+    "min_reward": "Points",
+    "max_reward": "$1,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "skyscanner",
     "name": "Skyscanner",
+    "reward_summary": "$100 - $8,000",
+    "min_reward": "$100",
+    "max_reward": "$8,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "smartchain-mbb-og",
     "name": "Electroneum Smart Chain (ETN-SC) \u2014 EVM-Compatible Blockchain",
+    "reward_summary": "$200 - $12,000",
+    "min_reward": "$200",
+    "max_reward": "$12,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "snapnames",
     "name": "SnapNames Bug Bounty",
+    "reward_summary": "Points - $2,000",
+    "min_reward": "Points",
+    "max_reward": "$2,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "soldevelo",
     "name": "SolDevelo",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "sophos",
     "name": "Sophos",
+    "reward_summary": "$100 - $80,000",
+    "min_reward": "$100",
+    "max_reward": "$80,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "soteri",
     "name": "Soteri Marketplace Bug Bounty",
+    "reward_summary": "$500 - $4,500",
+    "min_reward": "$500",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "soundcloud",
     "name": "SoundCloud",
+    "reward_summary": "$200 - $4,500",
+    "min_reward": "$200",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "spacex",
     "name": "SpaceX/Starlink",
+    "reward_summary": "Points - $100,000",
+    "min_reward": "Points",
+    "max_reward": "$100,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "square",
     "name": "Square",
+    "reward_summary": "Points - $18,000",
+    "min_reward": "Points",
+    "max_reward": "$18,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "stagil",
     "name": "STAGIL Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "statuspage",
     "name": "Statuspage",
+    "reward_summary": "$100 - $4,000",
+    "min_reward": "$100",
+    "max_reward": "$4,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "stiltsoft",
     "name": "Stiltsoft",
+    "reward_summary": "$100 - $3,000",
+    "min_reward": "$100",
+    "max_reward": "$3,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "stonikbyte",
     "name": "StonikByte",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "sykora-it-market",
     "name": "Sykora IT Marketplace Managed Bug Bounty Engagement",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "t-mobile",
     "name": "T-Mobile",
+    "reward_summary": "Points - $133,700",
+    "min_reward": "Points",
+    "max_reward": "$133,700",
     "crowdstream_enabled": true
   },
   {
     "slug": "tamedia",
     "name": "Tamedia",
+    "reward_summary": "$150 - $2,500",
+    "min_reward": "$150",
+    "max_reward": "$2,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "tempusex-public-mbb-og",
     "name": "Infinite Athlete",
+    "reward_summary": "$175 - $4,500",
+    "min_reward": "$175",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "tesla",
     "name": "Tesla",
+    "reward_summary": "$100 - $100,000",
+    "min_reward": "$100",
+    "max_reward": "$100,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "thefork-mbb-og",
     "name": "TheFork Managed Bug Bounty Engagement",
+    "reward_summary": "$50 - $3,500",
+    "min_reward": "$50",
+    "max_reward": "$3,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "thetradedesk-mbb",
     "name": "The Trade Desk",
+    "reward_summary": "$175 - $5,000",
+    "min_reward": "$175",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "thousandeyes-og",
     "name": "Cisco ThousandEyes Vulnerability Hunting aka Bug Bounty",
+    "reward_summary": "$200 - $4,500",
+    "min_reward": "$200",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "tidal-bugbounty",
     "name": "TIDAL",
+    "reward_summary": "$100 - $5,000",
+    "min_reward": "$100",
+    "max_reward": "$5,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "toolsplus",
     "name": "ToolsPlus",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "trello",
     "name": "Trello",
+    "reward_summary": "$250 - $12,000",
+    "min_reward": "$250",
+    "max_reward": "$12,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "tripadvisor-bb-og",
     "name": "Tripadvisor",
+    "reward_summary": "$50 - $5,000",
+    "min_reward": "$50",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "trm-labs-public-mbb",
     "name": "TRM Labs Public Bug Bounty Engagement",
+    "reward_summary": "Points - $1,000",
+    "min_reward": "Points",
+    "max_reward": "$1,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "twentyminuten",
     "name": "20 Minuten",
+    "reward_summary": "$250 - $5,000",
+    "min_reward": "$250",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "tyler-tech-data-insights",
     "name": "Tyler Technologies Data & Insights \u2013 Tyler Data Platform, powered by Socrata",
+    "reward_summary": "$150 - $2,500",
+    "min_reward": "$150",
+    "max_reward": "$2,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "ultramobile-ecomm",
     "name": "Ultra Mobile Public ECOMM 2025 Bug Bounty Engagement",
+    "reward_summary": "$175 - $4,500",
+    "min_reward": "$175",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "ultramobile-mobile-apps",
     "name": "Ultra Mobile Mobile Apps Bug Bounty Engagement",
+    "reward_summary": "$175 - $4,500",
+    "min_reward": "$175",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "ultramobile-public",
     "name": "Ultra Mobile Public Bug Bounty Engagement",
+    "reward_summary": "$175 - $4,500",
+    "min_reward": "$175",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "ultramobile-retailer-portal",
     "name": "Ultra Mobile Retailer Portal Bug Bounty Engagement",
+    "reward_summary": "$100 - $3,500",
+    "min_reward": "$100",
+    "max_reward": "$3,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "underarmour",
     "name": "Under Armour Product Security",
+    "reward_summary": "$125 - $2,500",
+    "min_reward": "$125",
+    "max_reward": "$2,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "underarmour-corp",
     "name": "Under Armour Corporate",
+    "reward_summary": "$125 - $2,500",
+    "min_reward": "$125",
+    "max_reward": "$2,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "unity",
     "name": "Unity Technologies",
+    "reward_summary": "$100 - $3,000",
+    "min_reward": "$100",
+    "max_reward": "$3,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "upwork",
     "name": "Upwork",
+    "reward_summary": "$120 - $5,000",
+    "min_reward": "$120",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "usaa",
     "name": "USAA",
+    "reward_summary": "$100 - $6,000",
+    "min_reward": "$100",
+    "max_reward": "$6,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "verisign",
     "name": "Verisign Bug Bounty",
+    "reward_summary": "$100 - $10,000",
+    "min_reward": "$100",
+    "max_reward": "$10,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "viator",
     "name": "Viator",
+    "reward_summary": "$200 - $4,500",
+    "min_reward": "$200",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "volkswagen-og",
     "name": "Volkswagen",
+    "reward_summary": "$150 - $2,500",
+    "min_reward": "$150",
+    "max_reward": "$2,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "volkswagen-vwfs-mbb-og",
     "name": "New Blue Website (NBW) - VWFS Bug Bounty Program",
+    "reward_summary": "$175 - $4,500",
+    "min_reward": "$175",
+    "max_reward": "$4,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "vox",
     "name": "Majid Al Futtaim Entertainment",
+    "reward_summary": "Points - $2,500",
+    "min_reward": "Points",
+    "max_reward": "$2,500",
     "crowdstream_enabled": false
   },
   {
     "slug": "we-weave",
     "name": "weweave UG Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "min_reward": "$100",
+    "max_reward": "$1,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "webdotcom",
     "name": "Web.com Bug Bounty",
+    "reward_summary": "Points - $3,000",
+    "min_reward": "Points",
+    "max_reward": "$3,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "wise",
     "name": "Wise (ex-TransferWise)",
+    "reward_summary": "$100 - $4,000",
+    "min_reward": "$100",
+    "max_reward": "$4,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "wyze",
     "name": "Wyze Bug Bounty",
+    "reward_summary": "$50 - $5,000",
+    "min_reward": "$50",
+    "max_reward": "$5,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "xfinity-home",
     "name": "Xfinity Home & xFi",
+    "reward_summary": "Points - $5,500",
+    "min_reward": "Points",
+    "max_reward": "$5,500",
     "crowdstream_enabled": true
   },
   {
     "slug": "ynab",
     "name": "YNAB",
+    "reward_summary": "$150 - $3,000",
+    "min_reward": "$150",
+    "max_reward": "$3,000",
     "crowdstream_enabled": true
   },
   {
     "slug": "zendesk",
     "name": "Zendesk Managed Bug Bounty Engagement",
+    "reward_summary": "$100 - $50,000",
+    "min_reward": "$100",
+    "max_reward": "$50,000",
     "crowdstream_enabled": false
   },
   {
     "slug": "zola-mbb-og",
     "name": "Zola Managed Bug Bounty",
+    "reward_summary": "$150 - $2,000",
+    "min_reward": "$150",
+    "max_reward": "$2,000",
     "crowdstream_enabled": true
   }
 ]

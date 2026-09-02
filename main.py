@@ -219,13 +219,20 @@ def load_programs(programs_file: Path = PROGRAMS_FILE) -> list[dict[str, Any]]:
             raise ProgramsError(f"Programs file {programs_file} repeats slug {slug}")
 
         seen_slugs.add(slug)
-        programs.append(
-            {
-                "slug": slug,
-                "name": name,
-                "crowdstream_enabled": crowdstream_enabled,
-            }
-        )
+        program = {
+            "slug": slug,
+            "name": name,
+            "crowdstream_enabled": crowdstream_enabled,
+        }
+        if "reward_summary" in item:
+            value = item["reward_summary"]
+            if not isinstance(value, str):
+                raise ProgramsError(
+                    f"Programs file {programs_file} entry {slug} has an invalid "
+                    "reward_summary"
+                )
+            program["reward_summary"] = value
+        programs.append(program)
 
     return programs
 
@@ -402,7 +409,13 @@ def paid_program_from_catalog(item: Any) -> dict[str, Any]:
         raise ProgramsError(
             "Bugcrowd paid-program catalog entry is missing a valid name or slug"
         )
-    return {"slug": match.group(1), "name": name.strip()}
+    program = {"slug": match.group(1), "name": name.strip()}
+    reward_summary = item.get("rewardSummary")
+    if isinstance(reward_summary, Mapping) and (
+        summary := text_value(reward_summary.get("summary"))
+    ):
+        program["reward_summary"] = summary
+    return program
 
 
 async def fetch_paid_programs(
@@ -410,7 +423,7 @@ async def fetch_paid_programs(
 ) -> list[dict[str, Any]]:
     params = {
         "category": "bug_bounty",
-        "sort_by": "promoted",
+        "sort_by": "starts",
         "sort_direction": "desc",
     }
 
@@ -468,6 +481,11 @@ async def fetch_paid_programs(
                 "with conflicting names"
             )
         programs_by_slug[program["slug"]] = program
+    if len(programs_by_slug) != total_count:
+        raise ProgramsError(
+            f"Bugcrowd paid-program catalog returned {len(programs_by_slug)} "
+            f"unique programs from {total_count} rows; refusing an incomplete snapshot"
+        )
     return sorted(programs_by_slug.values(), key=lambda program: program["slug"])
 
 
@@ -855,6 +873,10 @@ def build_program_change_embed(
             "inline": False,
         },
     ]
+    if reward_summary := text_value(program.get("reward_summary")):
+        fields.append(
+            {"name": "Reward summary", "value": reward_summary, "inline": False}
+        )
     for label, key in (
         ("Industry", "industry"),
         ("Status", "status"),
