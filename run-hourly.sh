@@ -27,6 +27,14 @@ else
 
     if git commit --only -m "chore: update CrowdStream state" -- "${state_files[@]}"; then
         echo "[*] Committed updated submission or program state."
+
+        if git push; then
+            echo "[*} Pushed changes to remote."
+        else
+            push_status=$?
+            echo "[!] Could not push changes to remote."
+            exit "$push_status"
+        fi
     else
         commit_status=$?
         echo "[!] Could not commit updated submission or program state."
