@@ -60,6 +60,12 @@
     "crowdstream_enabled": true
   },
   {
+    "slug": "akeles",
+    "name": "Akeles Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "crowdstream_enabled": true
+  },
+  {
     "slug": "appliger",
     "name": "AppLiger",
     "reward_summary": "$100 - $1,500",
@@ -468,6 +474,12 @@
     "slug": "epam-mbb-og",
     "name": "EPAM Systems Managed Bug Bounty Program",
     "reward_summary": "$50 - $1,000",
+    "crowdstream_enabled": true
+  },
+  {
+    "slug": "epicsumup",
+    "name": "APTIS",
+    "reward_summary": "$100 - $1,500",
     "crowdstream_enabled": true
   },
   {
@@ -962,6 +974,12 @@
     "crowdstream_enabled": true
   },
   {
+    "slug": "okapya",
+    "name": "Okapya",
+    "reward_summary": "$100 - $1,500",
+    "crowdstream_enabled": true
+  },
+  {
     "slug": "okta",
     "name": "Okta",
     "reward_summary": "$100 - $75,000",
@@ -1248,6 +1266,12 @@
     "name": "Seek.com",
     "reward_summary": "$25 - $6,000",
     "crowdstream_enabled": false
+  },
+  {
+    "slug": "shinetech-software-market",
+    "name": "Shinetech Software Inc Marketplace Managed Bug Bounty Engagement",
+    "reward_summary": "$100 - $1,500",
+    "crowdstream_enabled": true
   },
   {
     "slug": "shipwire",
@@ -1564,6 +1588,12 @@
     "slug": "xfinity-home",
     "name": "Xfinity Home & xFi",
     "reward_summary": "Points - $5,500",
+    "crowdstream_enabled": true
+  },
+  {
+    "slug": "xopero-software-marketplace",
+    "name": "Xopero Software S.A. Marketplace Managed Bug Bounty Engagement",
+    "reward_summary": "$100 - $1,500",
     "crowdstream_enabled": true
   },
   {
