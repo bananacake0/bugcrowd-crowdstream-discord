@@ -534,7 +534,7 @@
     "slug": "fivetran-mbb-og",
     "name": "Fivetran",
     "reward_summary": "Points - $15,000",
-    "crowdstream_enabled": true
+    "crowdstream_enabled": false
   },
   {
     "slug": "flourish",
