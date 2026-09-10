@@ -281,6 +281,12 @@
     "crowdstream_enabled": false
   },
   {
+    "slug": "catapultlabs",
+    "name": "Catapult Labs Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "crowdstream_enabled": true
+  },
+  {
     "slug": "celix-solutions-market",
     "name": "celix Solutions GmbH Marketplace Bug Bounty Program",
     "reward_summary": "$100 - $1,500",
@@ -437,6 +443,12 @@
   {
     "slug": "devsamurai",
     "name": "DevSamurai",
+    "reward_summary": "$100 - $1,500",
+    "crowdstream_enabled": true
+  },
+  {
+    "slug": "digitalrose",
+    "name": "Digital Rose's Marketplace Bug Bounty",
     "reward_summary": "$100 - $1,500",
     "crowdstream_enabled": true
   },
