@@ -263,6 +263,12 @@
     "crowdstream_enabled": true
   },
   {
+    "slug": "cappsule-sarl",
+    "name": "Cappsule Sarl - Marketplace Bug Bounty Program",
+    "reward_summary": "$100 - $1,500",
+    "crowdstream_enabled": true
+  },
+  {
     "slug": "carrefour",
     "name": "Majid Al Futtaim Retail",
     "reward_summary": "Points - $4,000",
@@ -335,6 +341,12 @@
     "crowdstream_enabled": true
   },
   {
+    "slug": "codecentric",
+    "name": "codecentric AG - Marketplace Bug Bounty Program",
+    "reward_summary": "$100 - $1,500",
+    "crowdstream_enabled": true
+  },
+  {
     "slug": "codeclou",
     "name": "codeclou GmbH",
     "reward_summary": "$100 - $1,500",
@@ -389,6 +401,12 @@
   {
     "slug": "craftcoders",
     "name": "Craft Coders Marketplace Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "crowdstream_enabled": true
+  },
+  {
+    "slug": "creativas",
+    "name": "Creativas",
     "reward_summary": "$100 - $1,500",
     "crowdstream_enabled": true
   },
@@ -1172,6 +1190,12 @@
     "crowdstream_enabled": true
   },
   {
+    "slug": "railsware",
+    "name": "Railsware",
+    "reward_summary": "$100 - $1,500",
+    "crowdstream_enabled": true
+  },
+  {
     "slug": "raleyapps",
     "name": "Raley Apps",
     "reward_summary": "$100 - $1,500",
@@ -1248,6 +1272,12 @@
     "name": "SAP Invitational Bug Bounty Program",
     "reward_summary": "$250 - $20,000",
     "crowdstream_enabled": false
+  },
+  {
+    "slug": "savignano",
+    "name": "Savignano Software Solutions Marketplace Bug Bounty Program",
+    "reward_summary": "$100 - $1,500",
+    "crowdstream_enabled": true
   },
   {
     "slug": "secureflag-mbb-market",
@@ -1529,6 +1559,12 @@
     "name": "USAA",
     "reward_summary": "$100 - $6,000",
     "crowdstream_enabled": false
+  },
+  {
+    "slug": "vectors-marketplace",
+    "name": "Vectors Bug Bounty",
+    "reward_summary": "$100 - $1,500",
+    "crowdstream_enabled": true
   },
   {
     "slug": "verisign",
