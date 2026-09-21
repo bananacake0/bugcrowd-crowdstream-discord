@@ -1555,6 +1555,12 @@
     "crowdstream_enabled": false
   },
   {
+    "slug": "unisys-mbb-og",
+    "name": "Unisys Managed Bug Bounty Engagement",
+    "reward_summary": "$50 - $4,500",
+    "crowdstream_enabled": true
+  },
+  {
     "slug": "unity",
     "name": "Unity Technologies",
     "reward_summary": "$100 - $3,000",
